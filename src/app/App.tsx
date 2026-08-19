@@ -348,24 +348,10 @@ function App() {
     let cancelled = false;
     setDataLoading(true);
     fetchDeclarations()
-      .then(async (rows) => {
+      .then((rows) => {
         if (cancelled) return;
-        if (rows.length === 0) {
-          // Empty database (e.g. fresh Supabase project) — seed it once with
-          // the same sample declarations the app used to generate locally,
-          // so the demo doesn't open to a blank table.
-          const seeded = await Promise.all(initialData.map((row) => {
-            const { id, ...rest } = row;
-            return createDeclaration(rest);
-          }));
-          if (!cancelled) {
-            setData(seeded);
-            setDataError(null);
-          }
-        } else {
-          setData(rows);
-          setDataError(null);
-        }
+        setData(rows);
+        setDataError(null);
       })
       .catch((err) => {
         console.error('Error loading declarations from Supabase:', err);
