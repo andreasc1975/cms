@@ -15,6 +15,7 @@ import { FilterDrawer, type FilterCriteria } from './components/FilterDrawer';
 import { ColumnVisibilityModal, type ColumnVisibility } from './components/ColumnVisibilityModal';
 import type { TableRowData } from './components/TableRow';
 import { migrateRecords } from './components/TableRow';
+import { fetchDeclarations, createDeclaration, updateDeclaration, deleteDeclaration } from './lib/declarationsApi';
 
 export interface FilterTemplate {
   id: string;
@@ -337,19 +338,47 @@ function App() {
   
   const [columnVisibilityModalOpen, setColumnVisibilityModalOpen] = useState(false);
   
-  // Data state with localStorage persistence
-  const [data, setData] = useState<TableRowData[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.TABLE_DATA);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? migrateRecords(parsed) : initialData;
-      }
-    } catch (error) {
-      console.error('Error loading table data from localStorage:', error);
-    }
-    return initialData;
-  });
+  // Data state — loaded from Supabase (shared across everyone visiting the
+  // demo URL, replacing the old per-browser localStorage store).
+  const [data, setData] = useState<TableRowData[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDataLoading(true);
+    fetchDeclarations()
+      .then(async (rows) => {
+        if (cancelled) return;
+        if (rows.length === 0) {
+          // Empty database (e.g. fresh Supabase project) — seed it once with
+          // the same sample declarations the app used to generate locally,
+          // so the demo doesn't open to a blank table.
+          const seeded = await Promise.all(initialData.map((row) => {
+            const { id, ...rest } = row;
+            return createDeclaration(rest);
+          }));
+          if (!cancelled) {
+            setData(seeded);
+            setDataError(null);
+          }
+        } else {
+          setData(rows);
+          setDataError(null);
+        }
+      })
+      .catch((err) => {
+        console.error('Error loading declarations from Supabase:', err);
+        if (!cancelled) setDataError(err.message || 'Failed to load declarations');
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addModalKey, setAddModalKey] = useState(0); // Key to force modal reset
   const [editingRecord, setEditingRecord] = useState<TableRowData | null>(null); // For edit mode
@@ -492,15 +521,11 @@ function App() {
     localStorage.setItem('warehouseApp_columnVisibility', JSON.stringify(columnVisibility));
   }, [columnVisibility]);
   
-  // Persist table data
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.TABLE_DATA, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error saving table data to localStorage:', error);
-    }
-  }, [data]);
+  // Note: `data` no longer needs a localStorage-persist effect — every
+  // mutation (create/update/delete/patch below) writes straight to Supabase,
+  // and `data` itself is just the local in-memory mirror of what's there.
   
+
   const handleColumnVisibilityChange = useCallback((column: keyof ColumnVisibility, visible: boolean) => {
     setColumnVisibility(prev => ({
       ...prev,
@@ -835,17 +860,33 @@ function App() {
   
   // Handle add new assignment
   const handleAddAssignment = useCallback((assignment: Omit<TableRowData, 'id'>) => {
-    const newId = `manual-${Date.now()}-${Math.random()}`;
-    const newAssignment: TableRowData = {
-      ...assignment,
-      id: newId
-    };
-    
-    setData(prev => [newAssignment, ...prev]);
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const optimisticRow: TableRowData = { ...assignment, id: tempId };
+
+    setData(prev => [optimisticRow, ...prev]);
     setCreatedDeclarationNo(assignment.customsNo);
-    setCreatedDeclarationId(newId);
+    setCreatedDeclarationId(tempId);
     setConfirmationDialogOpen(true);
-    
+
+    // Insert into Supabase in the background — the modal's onSave contract
+    // is synchronous (it needs a declaration number back immediately to
+    // show the confirmation dialog), so we optimistically show the row now
+    // and reconcile its real id once the insert resolves. On failure, roll
+    // the optimistic row back out.
+    createDeclaration(assignment)
+      .then((saved) => {
+        setData(prev => prev.map(row => (row.id === tempId ? saved : row)));
+        setCreatedDeclarationId((current) => (current === tempId ? saved.id : current));
+        // If the user already clicked through to the detail view before this
+        // resolved, they're currently looking at the temp id — swap it to
+        // the real one so DetailView doesn't suddenly stop finding its record.
+        setSelectedRecordId((current) => (current === tempId ? saved.id : current));
+      })
+      .catch((err) => {
+        console.error('Error creating declaration in Supabase:', err);
+        setData(prev => prev.filter(row => row.id !== tempId));
+      });
+
     return assignment.customsNo;
   }, []);
   
@@ -936,6 +977,9 @@ function App() {
         newSet.delete(id);
         return newSet;
       });
+      deleteDeclaration(id).catch((err) => {
+        console.error('Error deleting declaration from Supabase:', err);
+      });
     }
   }, []);
   
@@ -949,9 +993,13 @@ function App() {
       : `Are you sure you want to remove ${count} customs declarations?`;
     
     if (confirm(message)) {
+      const idsToDelete: string[] = Array.from(selectedRows);
       setData(prev => prev.filter(row => !selectedRows.has(row.id)));
       setSelectedRows(new Set());
       setIsSelectAllChecked(false);
+      Promise.all(idsToDelete.map((id: string) => deleteDeclaration(id))).catch((err) => {
+        console.error('Error deleting declarations from Supabase:', err);
+      });
     }
   }, [selectedRows]);
   
@@ -961,6 +1009,9 @@ function App() {
       row.id === id ? { ...assignment, id } : row
     ));
     setEditingRecord(null);
+    updateDeclaration(id, assignment).catch((err) => {
+      console.error('Error updating declaration in Supabase:', err);
+    });
     return assignment.customsNo;
   }, []);
 
@@ -971,6 +1022,9 @@ function App() {
     setData(prev => prev.map(row =>
       row.id === id ? { ...row, ...updates } : row
     ));
+    updateDeclaration(id, updates).catch((err) => {
+      console.error('Error patching declaration in Supabase:', err);
+    });
   }, []);
   
   // Sort state
@@ -1032,6 +1086,16 @@ function App() {
   
   return (
     <div className="min-h-screen bg-white">
+      {dataError && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-[#d0021b] text-white text-[12px] font-['Inter'] font-semibold px-[16px] py-[8px] text-center">
+          Could not connect to the database: {dataError}. Check that VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set correctly.
+        </div>
+      )}
+      {dataLoading && (
+        <div className="fixed inset-0 z-[90] bg-white flex items-center justify-center">
+          <p className="font-['Inter'] text-[14px] text-[#003160]">Loading declarations…</p>
+        </div>
+      )}
       <Sidebar 
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(prev => !prev)}
@@ -1084,7 +1148,7 @@ function App() {
         })() : undefined}
       />
       {activeMainTitle === 'Application' && activeSubLink === 'Sub Link 1' ? (
-        selectedRecordId ? (
+        selectedRecordId && data.find(r => r.id === selectedRecordId) ? (
           <DetailView
             key={selectedRecordId}
             record={data.find(r => r.id === selectedRecordId)!}
