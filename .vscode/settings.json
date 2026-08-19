@@ -1,0 +1,11 @@
+{
+  // The built-in CSS language service doesn't know about Tailwind v4's
+  // at-rules (@custom-variant, @theme, @apply, @source) and flags them as
+  // "Unknown at rule" — these are valid, the warnings are false positives.
+  // Installing the "Tailwind CSS IntelliSense" extension (bradlc.vscode-tailwindcss)
+  // handles this correctly and adds class-name autocomplete; this setting is a
+  // fallback so the Problems panel stays clean either way.
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore"
+}

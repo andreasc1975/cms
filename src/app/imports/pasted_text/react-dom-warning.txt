@@ -1,0 +1,94 @@
+Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element.%s _fgS _fgs 
+    at button
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:676 [e]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:310 [e]
+    at https://esm.sh/@radix-ui/react-primitive@2.0.2/es2022/react-primitive.mjs:2:471 [n]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:676 [e]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:310 [e]
+    at https://esm.sh/@radix-ui/react-primitive@2.0.2/es2022/react-primitive.mjs:2:471 [n]
+    at https://esm.sh/@radix-ui/react-popper@1.2.2/es2022/react-popper.mjs:2:1313 [n]
+    at https://esm.sh/@radix-ui/react-menu@2.1.6/es2022/react-menu.mjs:2:3147 [t]
+    at https://esm.sh/@radix-ui/react-dropdown-menu@2.1.6/es2022/react-dropdown-menu.mjs:2:1410 [o]
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at dropdown-menu.tsx:26:5
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at X12 (https://esm.sh/@radix-ui/react-popper@1.2.2/es2022/react-popper.mjs:2:1135 [i])
+    at ge5 (https://esm.sh/@radix-ui/react-menu@2.1.6/es2022/react-menu.mjs:2:2312 [n])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at h22 (https://esm.sh/@radix-ui/react-dropdown-menu@2.1.6/es2022/react-dropdown-menu.mjs:2:968 [n])
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at DropdownMenu (dropdown-menu.tsx:10:5)
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at FilterDrawer (FilterDrawer.tsx:63:31)
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at App (App.tsx:247:54)
+⚠️ Warning: React does not recognize the `%s` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `%s` instead. If you accidentally passed it from a parent component, remove it from the DOM element.%s _fgB _fgb 
+    at button
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:676 [e]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:310 [e]
+    at https://esm.sh/@radix-ui/react-primitive@2.0.2/es2022/react-primitive.mjs:2:471 [n]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:676 [e]
+    at https://esm.sh/@radix-ui/react-slot@1.1.2/es2022/react-slot.mjs:2:310 [e]
+    at https://esm.sh/@radix-ui/react-primitive@2.0.2/es2022/react-primitive.mjs:2:471 [n]
+    at https://esm.sh/@radix-ui/react-popper@1.2.2/es2022/react-popper.mjs:2:1313 [n]
+    at https://esm.sh/@radix-ui/react-menu@2.1.6/es2022/react-menu.mjs:2:3147 [t]
+    at https://esm.sh/@radix-ui/react-dropdown-menu@2.1.6/es2022/react-dropdown-menu.mjs:2:1410 [o]
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at dropdown-menu.tsx:26:5
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at X12 (https://esm.sh/@radix-ui/react-popper@1.2.2/es2022/react-popper.mjs:2:1135 [i])
+    at ge5 (https://esm.sh/@radix-ui/react-menu@2.1.6/es2022/react-menu.mjs:2:2312 [n])
+    at d80 (https://esm.sh/@radix-ui/react-context@1.1.1/es2022/react-context.mjs:2:589 [m])
+    at h22 (https://esm.sh/@radix-ui/react-dropdown-menu@2.1.6/es2022/react-dropdown-menu.mjs:2:968 [n])
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at DropdownMenu (dropdown-menu.tsx:10:5)
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at FilterDrawer (FilterDrawer.tsx:63:31)
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at div
+    at https://esm.sh/lucide-react@0.539.0/es2022/lucide-react.mjs:2:48634
+    at FGCmp2 (fginspector:3:54)
+    at App (App.tsx:247:54)
