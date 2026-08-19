@@ -19,7 +19,7 @@ export function OrganizationDetailModal({ isOpen, onClose, organizationData }: O
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/40"
