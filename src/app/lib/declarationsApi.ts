@@ -249,7 +249,7 @@ export async function fetchGeneralFormData(declarationId: string): Promise<{ for
   };
 }
 
-export async function saveGeneralFormData(declarationId: string, formData: Record<string, string>): Promise<void> {
+export async function saveGeneralFormData(declarationId: string, formData: Record<string, any>): Promise<void> {
   const { error } = await supabase
     .from('declarations')
     .update({ general_form_data: formData })
