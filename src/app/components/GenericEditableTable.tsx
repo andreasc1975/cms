@@ -22,6 +22,7 @@ export interface GenericColumn<T = any> {
   enableAddNew?: boolean; // For select type with add new functionality
   onAddNew?: (searchQuery: string) => void; // Callback when adding new item
   isAmount?: boolean; // For link type: renders as right-aligned Roboto Mono (use for monetary/numeric link columns like Fees)
+  emptyLabel?: string; // For link type: text shown when there's no value yet, instead of the default '—'
 }
 
 export interface GenericTableConfig<T = any> {
@@ -629,7 +630,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
                 : "font-['Inter'] text-[12px] text-[#446BF9] hover:underline cursor-pointer bg-transparent border-0 p-0 truncate block tracking-[0] font-bold focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
             }
           >
-            {value || '—'}
+            {value || column.emptyLabel || '—'}
           </button>
         </td>
       );

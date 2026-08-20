@@ -396,12 +396,32 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
   const [detailData, setDetailData] = useState<ItemLineRow[]>(defaultDetailData);
   const [itemsLoaded, setItemsLoaded] = useState(false);
 
+  // Auto-assigns box 32 "Item Line No" — as soon as any other field on a row
+  // has a value, that row gets the next sequential number (1, 2, 3...) among
+  // rows that actually have data. Fully-empty rows stay blank. Recomputed on
+  // every edit, so clearing a row correctly renumbers the ones after it.
+  const computeItemLineNumbers = (rows: ItemLineRow[]): ItemLineRow[] => {
+    let counter = 0;
+    return rows.map((row) => {
+      const hasData = (Object.keys(row) as (keyof ItemLineRow)[]).some((key) => {
+        if (key === 'id' || key === 'itemLineNo') return false;
+        const val = row[key];
+        return typeof val === 'boolean' ? val : !!val && String(val).trim() !== '';
+      });
+      if (hasData) {
+        counter += 1;
+        return { ...row, itemLineNo: String(counter) };
+      }
+      return row.itemLineNo ? { ...row, itemLineNo: '' } : row;
+    });
+  };
+
   useEffect(() => {
     let cancelled = false;
     fetchItemLines(record.id)
       .then((items) => {
         if (cancelled) return;
-        setDetailData(items.length > 0 ? items : defaultDetailData);
+        setDetailData(computeItemLineNumbers(items.length > 0 ? items : defaultDetailData));
       })
       .catch((err) => console.error('Error loading item lines from Supabase:', err))
       .finally(() => {
@@ -489,9 +509,14 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       .catch((err) => console.error('Error deleting document from Supabase Storage:', err));
   };
 
+  // Auto-assigns box 32 "Item Line No" — as soon as any other field on a row
+  // has a value, that row gets the next sequential number (1, 2, 3...) among
+  // rows that actually have data. Fully-empty rows stay blank. Recomputed on
+  // every edit, so clearing a row correctly renumbers the ones after it.
+
   // Handle data changes from the table
   const handleDataChange = (newData: ItemLineRow[]) => {
-    setDetailData(newData);
+    setDetailData(computeItemLineNumbers(newData));
   };
 
   // Sum the Items rows so the header's "used"/"remains" figures reflect what's
@@ -518,6 +543,32 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     'deliveryTerms', 'deliveryPlace', 'nationality', 'customsOffice', 'transportMode', 'locationGoods'
   ];
 
+  // Human-readable label for each required field, matching the text shown
+  // next to its orange box number in Details — used to name exactly which
+  // fields are missing in the validation error, instead of just a count.
+  const GENERAL_FIELD_LABELS: Record<keyof GeneralFormData, string> = {
+    controlNo: 'Control No (48)',
+    controlNoExtra: 'Control No',
+    declarationType: 'Declaration (1)',
+    declarationStatus: 'Message / Declaration Type',
+    exportType: 'Declaration',
+    referenceNo: 'Reference No (7)',
+    internalReference: 'Internal Reference',
+    countryDispatch: 'Country of Dispatch (15A)',
+    countryDestination: 'Country of Destination (17A)',
+    container: 'Container (18)',
+    deliveryTerms: 'Delivery Terms (20)',
+    deliveryPlace: 'Delivery Place (25)',
+    nationality: 'Nationality at Border Crossing (21)',
+    identityTransport: 'Nationality at Border Crossing',
+    transactionType: 'Transaction Type (26)',
+    customsOffice: 'Customs Office of Exit (29)',
+    transportMode: 'Mode of Transport at the Border (25)',
+    locationGoods: 'Location of Goods (30)',
+    goodsPositionNo: 'Goods+ Position No (44)',
+    noOfParcels: 'No of Parcels (6)'
+  };
+
   const [sendState, setSendState] = useState<'idle' | 'sending'>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -527,7 +578,8 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     // 1. Every field with an orange declaration-form box number must be filled in.
     const missing = REQUIRED_GENERAL_FIELDS.filter((key) => !formData[key] || !formData[key].trim());
     if (missing.length > 0) {
-      setSendError(`${missing.length} required field${missing.length > 1 ? 's' : ''} still empty — every orange box-numbered field in Details must be filled in before sending.`);
+      const fieldNames = missing.map((key) => GENERAL_FIELD_LABELS[key]).join(', ');
+      setSendError(`Missing required field${missing.length > 1 ? 's' : ''}: ${fieldNames}. Fill in every orange box-numbered field in Details before sending.`);
       setActiveTab('details');
       return;
     }
@@ -839,6 +891,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       label: 'Reference',
       numberPrefix: '44',
       type: 'link',
+      emptyLabel: 'No Documents',
       minWidth: '130px',
       editable: true,
       sortable: true,
