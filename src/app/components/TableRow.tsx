@@ -26,7 +26,7 @@ export interface TableRowData {
 
   // Fields collected in the "Create Customs Declaration" modal, wired through
   // to the TopBar and DetailView's GENERAL section.
-  declarationType?: 'EX' | 'IM'; // box 1 on the declaration form
+  declarationType?: 'EX' | 'IM' | 'EU'; // box 1 on the declaration form — 'EU' when trading with an EU country
   messageDeclarationType?: string;
   managedBy?: string;
   customsClearanceUnit?: string;

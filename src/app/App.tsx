@@ -1113,7 +1113,7 @@ function App() {
             status: record.status,
             customsNo: record.customsNo,
             sendDate: record.processed,
-            importExport: record.declarationType === 'IM' ? 'Import' : (record.typeBadge === 'E' ? 'Export' : 'Import'),
+            importExport: record.declarationType || (record.typeBadge === 'E' ? 'EX' : 'IM'),
             messageDeclarationType: record.messageDeclarationType,
             managedBy: record.managedBy || 'Not assigned',
             customsClearanceUnit: record.customsClearanceUnit || 'Not assigned',

@@ -3,6 +3,13 @@ import { GenericEditableTable } from './GenericEditableTable';
 import type { GenericColumn } from './GenericEditableTable';
 import type { TableRowData } from './TableRow';
 import type { InvoiceRow } from './InvoiceTable';
+import {
+  fetchGeneralFormData,
+  saveGeneralFormData,
+  saveProposedFields,
+  fetchItemLines,
+  saveItemLines
+} from '../lib/declarationsApi';
 import { FormInput } from './FormInput';
 import { FormSelect } from './FormSelect';
 import { FormTextarea } from './FormTextarea';
@@ -127,6 +134,17 @@ interface GeneralFormData {
 export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange, headerHeight = 0, onEditClick, onUpdateRecord, pdfPreviewOpen = false, onClosePdfPreview }: DetailViewProps) {
   // Height of the fixed Details/Items tab bar rendered below the TopBar.
   const TAB_BAR_HEIGHT = 60;
+
+  // Safety net: force the browser viewport back to the top whenever this
+  // page mounts (e.g. opening a declaration). The root cause of the page
+  // opening "scrolled down" was a missing min-h-0 on the internal
+  // overflow-auto containers (without it, flex items refuse to shrink below
+  // their content's natural height, so the *window* ends up scrolling
+  // instead of the intended internal container) — that's fixed below, but
+  // this stays as a cheap extra guarantee.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Recomputes the record's aggregate fields (value/currency/weights/parcels)
   // from its invoices — used whenever an invoice is removed from the Freight
@@ -261,19 +279,8 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
     internalReference: record.internalReference || ''
   };
 
-  // State to track which fields are proposed
-  const [proposedFields, setProposedFields] = useState<Set<string>>(() => {
-    try {
-      const storageKey = `customs_declaration_proposed_${record.id}`;
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        return new Set(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Error loading proposed fields from localStorage:', error);
-    }
-    return new Set();
-  });
+  // State to track which fields are proposed — loaded from Supabase below.
+  const [proposedFields, setProposedFields] = useState<Set<string>>(new Set());
 
   // State to track if user has made any changes
   const [hasUserChanges, setHasUserChanges] = useState(false);
@@ -282,56 +289,63 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
   // and this tab bar stay fixed on both.
   const [activeTab, setActiveTab] = useState<'details' | 'items'>('details');
 
-  // State for form data with localStorage persistence
-  const [formData, setFormData] = useState<GeneralFormData>(() => {
-    try {
-      const storageKey = `customs_declaration_form_${record.id}`;
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Error loading declaration form from localStorage:', error);
-    }
-    
-    // Check if this is a newly created record (empty form data)
-    // If so, apply proposed data
-    const isNewRecord = !localStorage.getItem(`customs_declaration_form_${record.id}`);
-    if (isNewRecord) {
-      // Only mark fields as "proposed" if the create-modal actually set a value —
-      // an empty field has nothing to confirm.
-      const proposedKeys = (Object.keys(proposedData) as (keyof typeof proposedData)[])
-        .filter((key) => proposedData[key]);
-      setProposedFields(new Set(proposedKeys));
-      return { ...defaultFormData, ...proposedData };
-    }
-    
-    return defaultFormData;
-  });
+  // GENERAL form data — loaded from Supabase (shared across visitors, not
+  // per-browser localStorage). `formDataLoaded` gates the save-effects below
+  // so we never write back the still-loading default values over real data.
+  const [formData, setFormData] = useState<GeneralFormData>(defaultFormData);
+  const [formDataLoaded, setFormDataLoaded] = useState(false);
 
-  // Save form data to localStorage only if user has made changes
   useEffect(() => {
-    if (!hasUserChanges) return; // Don't save if user hasn't made any changes
-    
-    try {
-      const storageKey = `customs_declaration_form_${record.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(formData));
-    } catch (error) {
-      console.error('Error saving declaration form to localStorage:', error);
-    }
-  }, [formData, record.id, hasUserChanges]);
+    let cancelled = false;
+    fetchGeneralFormData(record.id)
+      .then(({ formData: stored, proposedFields: storedProposed }) => {
+        if (cancelled) return;
+        if (stored) {
+          setFormData(stored as unknown as GeneralFormData);
+          setProposedFields(new Set(storedProposed));
+        } else {
+          // New record — seed from what was entered in the Create modal,
+          // offered here as "proposed" values to accept or clear.
+          const proposedKeys = (Object.keys(proposedData) as (keyof typeof proposedData)[])
+            .filter((key) => proposedData[key]);
+          setProposedFields(new Set(proposedKeys));
+          setFormData({ ...defaultFormData, ...proposedData });
+        }
+      })
+      .catch((err) => console.error('Error loading GENERAL form data from Supabase:', err))
+      .finally(() => {
+        if (!cancelled) setFormDataLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.id]);
 
-  // Save proposed fields to localStorage whenever they change
+  // Save form data to Supabase (debounced — this fires on every keystroke
+  // otherwise) once loaded, and only if the user has actually changed something.
   useEffect(() => {
-    try {
-      const storageKey = `customs_declaration_proposed_${record.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(proposedFields)));
-    } catch (error) {
-      console.error('Error saving proposed fields to localStorage:', error);
-    }
-  }, [proposedFields, record.id]);
+    if (!hasUserChanges || !formDataLoaded) return;
+    const timeout = setTimeout(() => {
+      saveGeneralFormData(record.id, formData).catch((err) => {
+        console.error('Error saving GENERAL form data to Supabase:', err);
+      });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [formData, record.id, hasUserChanges, formDataLoaded]);
 
-  // State for table data with localStorage persistence
+  // Save proposed fields to Supabase whenever they change
+  useEffect(() => {
+    if (!formDataLoaded) return;
+    saveProposedFields(record.id, Array.from(proposedFields)).catch((err) => {
+      console.error('Error saving proposed fields to Supabase:', err);
+    });
+  }, [proposedFields, record.id, formDataLoaded]);
+
+
+  // State for the Brønnøysundregistrene lookup, plus the consignee's org
+  // number (persisted per-declaration only implicitly for now — the lookup
+  // itself is stateless and re-runs on mount).
   const [orgNoConsignee] = useState(() => Math.floor(100000000 + Math.random() * 900000000).toString());
 
   // Check whether the consignee's org number is registered in Brønnøysundregistrene
@@ -368,29 +382,38 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
     };
   }, [orgNoConsignee]);
 
-  const [detailData, setDetailData] = useState<ItemLineRow[]>(() => {
-    // Load from localStorage on initial mount
-    try {
-      const storageKey = `customs_declaration_items_${record.id}`;
-      const stored = localStorage.getItem(storageKey);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (error) {
-      console.error('Error loading declaration items from localStorage:', error);
-    }
-    return defaultDetailData;
-  });
+  // Items rows — loaded from Supabase (shared across visitors).
+  const [detailData, setDetailData] = useState<ItemLineRow[]>(defaultDetailData);
+  const [itemsLoaded, setItemsLoaded] = useState(false);
 
-  // Save to localStorage whenever data changes
   useEffect(() => {
-    try {
-      const storageKey = `customs_declaration_items_${record.id}`;
-      localStorage.setItem(storageKey, JSON.stringify(detailData));
-    } catch (error) {
-      console.error('Error saving declaration items to localStorage:', error);
-    }
-  }, [detailData, record.id]);
+    let cancelled = false;
+    fetchItemLines(record.id)
+      .then((items) => {
+        if (cancelled) return;
+        setDetailData(items.length > 0 ? items : defaultDetailData);
+      })
+      .catch((err) => console.error('Error loading item lines from Supabase:', err))
+      .finally(() => {
+        if (!cancelled) setItemsLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.id]);
+
+  // Save items to Supabase (debounced) once loaded — every row edit
+  // triggers this, so debounce avoids a write on every keystroke.
+  useEffect(() => {
+    if (!itemsLoaded) return;
+    const timeout = setTimeout(() => {
+      saveItemLines(record.id, detailData).catch((err) => {
+        console.error('Error saving item lines to Supabase:', err);
+      });
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [detailData, record.id, itemsLoaded]);
 
   // Handle data changes from the table
   const handleDataChange = (newData: ItemLineRow[]) => {
@@ -772,14 +795,14 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
       {/* Main content (Details/Items). Margin-right makes room for the panel
           so it genuinely pushes/resizes the content instead of overlaying it. */}
       <div
-        className="flex-1 min-w-0 flex flex-col"
+        className="flex-1 min-w-0 min-h-0 flex flex-col"
         style={{
           marginRight: `${pdfPreviewOpen ? panelWidth : 0}px`,
           transition: isResizingPanel ? 'none' : 'margin-right 300ms'
         }}
       >
       {activeTab === 'details' && (
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
       {/* Form Section */}
       <div className="flex-shrink-0 px-[10px] pb-[20px] bg-white pr-[20px] pl-[20px]">
         <div className="px-[0px] py-[20px] pt-[20px] pr-[0px] pb-[0px] pl-[0px]">
@@ -980,7 +1003,7 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
                         label="Declaration"
                         numberPrefix="1"
                         value={formData.declarationType}
-                        options={['EX', 'IM', 'TR']}
+                        options={['EX', 'IM', 'EU', 'TR']}
                         onChange={(value) => updateFormField('declarationType', value)}
                         onBlur={() => handleFieldBlur('declarationType')}
                         isProposed={proposedFields.has('declarationType')}
@@ -1192,7 +1215,7 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
       )}
 
       {activeTab === 'items' && (
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto">
       {/* Detail Table */}
       <div className="flex-1 px-[10px] pt-[20px] pb-[15px]">
         <div className="flex items-center justify-end gap-2 mb-[8px]">

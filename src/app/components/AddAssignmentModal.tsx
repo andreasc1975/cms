@@ -10,6 +10,7 @@ import { ConfirmationDialog } from './ConfirmationDialog';
 import { OrganizationDetailModal } from './OrganizationDetailModal';
 import { InvoiceTable, type InvoiceRow } from './InvoiceTable';
 import { CreateOrganizationModal, type OrganizationFormData } from './CreateOrganizationModal';
+import { fetchAddresses, createAddress, seedAddressesIfEmpty, type AddressEntry } from '../lib/addressesApi';
 
 interface AddAssignmentModalProps {
   isOpen: boolean;
@@ -20,7 +21,9 @@ interface AddAssignmentModalProps {
   onUpdate?: (id: string, assignment: Omit<TableRowData, 'id'>) => string;
 }
 
-// Company database with addresses
+// Company database with addresses — same shape the rest of this file already
+// works with; populated from Supabase's `addresses` table (see addressesApi),
+// not hardcoded, so foreign entries can be managed centrally.
 interface CompanyData {
   name: string;
   address: string;
@@ -33,31 +36,63 @@ interface CompanyData {
   country?: string;
 }
 
-const COMPANIES: CompanyData[] = [
-  { name: 'Schenker Norge AS', address: 'Alnabru Terminalgata 20, 0614 Oslo', verified: true, orgName: 'Schenker', orgNo: '88901', city: 'Oslo', state: 'Oslo', postcode: '0614', country: 'Norway' },
-  { name: 'Norsk Hydro ASA', address: 'Drammensveien 264, 0283 Oslo', verified: true, orgName: 'Hydro', orgNo: '88902', city: 'Oslo', state: 'Oslo', postcode: '0283', country: 'Norway' },
-  { name: 'Equinor ASA', address: 'Forusbeen 50, 4035 Stavanger', verified: false, orgName: 'Equinor', city: 'Stavanger', state: 'Rogaland', postcode: '4035', country: 'Norway' },
-  { name: 'Orkla Foods Norge AS', address: 'Karenslyst Allé 6, 0278 Oslo', verified: true, orgName: 'Orkla', orgNo: '88904', city: 'Oslo', state: 'Oslo', postcode: '0278', country: 'Norway' },
-  { name: 'Rema 1000 Norge AS', address: 'Drammensveien 149, 0277 Oslo', verified: false, orgName: 'Rema', city: 'Oslo', state: 'Oslo', postcode: '0277', country: 'Norway' },
-  { name: 'NorgesGruppen ASA', address: 'Industriveien 25, 2069 Jessheim', verified: true, orgName: 'NorgesGruppen', orgNo: '88906', city: 'Jessheim', state: 'Viken', postcode: '2069', country: 'Norway' },
-  { name: 'Telenor ASA', address: 'Snarøyveien 30, 1360 Fornebu', verified: true, orgName: 'Telenor', orgNo: '88907', city: 'Fornebu', state: 'Viken', postcode: '1360', country: 'Norway' },
-  { name: 'DNB Bank ASA', address: 'Dronning Eufemias gate 30, 0191 Oslo', verified: false, orgName: 'DNB', city: 'Oslo', state: 'Oslo', postcode: '0191', country: 'Norway' },
-  { name: 'Storebrand ASA', address: 'Professor Kohtsvei 9, 1366 Lysaker', verified: true, orgName: 'Storebrand', orgNo: '88909', city: 'Lysaker', state: 'Viken', postcode: '1366', country: 'Norway' },
-  { name: 'Yara International ASA', address: 'Drammensveien 131, 0277 Oslo', verified: false, orgName: 'Yara', city: 'Oslo', state: 'Oslo', postcode: '0277', country: 'Norway' },
-  { name: 'Aker Solutions ASA', address: 'Oksenøyveien 10, 1366 Lysaker', verified: true, orgName: 'Aker', orgNo: '88911', city: 'Lysaker', state: 'Viken', postcode: '1366', country: 'Norway' },
-  { name: 'Kongsberg Gruppen ASA', address: 'Kirkegårdsveien 45, 3616 Kongsberg', verified: false, orgName: 'Kongsberg', city: 'Kongsberg', state: 'Viken', postcode: '3616', country: 'Norway' },
-  { name: 'Mowi ASA', address: 'Sandviksboder 77A, 5035 Bergen', verified: true, orgName: 'Mowi', orgNo: '88913', city: 'Bergen', state: 'Vestland', postcode: '5035', country: 'Norway' },
-  { name: 'Elkem ASA', address: 'Drammensveien 167, 0277 Oslo', verified: true, orgName: 'Elkem', orgNo: '88914', city: 'Oslo', state: 'Oslo', postcode: '0277', country: 'Norway' },
-  { name: 'Salmar ASA', address: 'Industriveien 51, 7266 Kverva', verified: false, orgName: 'Salmar', city: 'Kverva', state: 'Trøndelag', postcode: '7266', country: 'Norway' },
-  { name: 'Atea ASA', address: 'Grenseveien 88, 0663 Oslo', verified: true, orgName: 'Atea', orgNo: '88916', city: 'Oslo', state: 'Oslo', postcode: '0663', country: 'Norway' },
-  { name: 'TGS ASA', address: 'Askekroken 11, 0277 Oslo', verified: false, orgName: 'TGS', city: 'Oslo', state: 'Oslo', postcode: '0277', country: 'Norway' },
-  { name: 'Autostore AS', address: 'Stokkastrandvegen 85, 5578 Nedre Vats', verified: true, orgName: 'Autostore', orgNo: '88918', city: 'Nedre Vats', state: 'Rogaland', postcode: '5578', country: 'Norway' },
-  { name: 'Statkraft AS', address: 'Lilleakerveien 6, 0283 Oslo', verified: true, orgName: 'Statkraft', orgNo: '88919', city: 'Oslo', state: 'Oslo', postcode: '0283', country: 'Norway' },
-  { name: 'Wilhelmsen Ship Management', address: 'Strandveien 20, 1366 Lysaker', verified: false, orgName: 'Wilhelmsen', city: 'Lysaker', state: 'Viken', postcode: '1366', country: 'Norway' }
-];
+function addressEntryToCompanyData(entry: AddressEntry): CompanyData {
+  return {
+    name: entry.name,
+    address: entry.address,
+    verified: entry.verified,
+    orgName: entry.associatedOrganization || entry.name,
+    orgNo: entry.orgNo || undefined,
+    city: entry.city,
+    state: entry.state,
+    postcode: entry.postCode,
+    country: entry.country
+  };
+}
+
+// EU member states (excluding Norway, which is EEA but not EU) — used to
+// classify a declaration as "EU" trade when Norway trades with one of these,
+// as opposed to "Export"/"Import" for trade with the rest of the world.
+const EU_COUNTRIES = new Set([
+  'Austria', 'Belgium', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia', 'Czech Republic',
+  'Denmark', 'Estonia', 'Finland', 'France', 'Germany', 'Greece', 'Hungary',
+  'Ireland', 'Italy', 'Latvia', 'Lithuania', 'Luxembourg', 'Malta', 'Netherlands',
+  'Poland', 'Portugal', 'Romania', 'Slovakia', 'Slovenia', 'Spain', 'Sweden'
+]);
+
+/**
+ * Automatically classifies a declaration's direction based on the Consignor
+ * and Consignee countries — replaces the old manual Import/Export picker.
+ *   - Norway -> EU country (or vice versa)      => 'EU'
+ *   - Norway -> anywhere else (or vice versa)    => 'EX' (outbound) / 'IM' (inbound)
+ *   - Neither side is Norway, or both are        => can't classify (null)
+ */
+function classifyDeclarationDirection(consignorCountry: string | undefined, consigneeCountry: string | undefined): { declarationType: 'EX' | 'IM' | 'EU'; typeBadge: 'E' | 'C' } | null {
+  const NORWAY = 'Norway';
+  const consignorIsNorway = consignorCountry === NORWAY;
+  const consigneeIsNorway = consigneeCountry === NORWAY;
+
+  if (consignorIsNorway && !consigneeIsNorway) {
+    // Outbound from Norway
+    return { declarationType: consigneeCountry && EU_COUNTRIES.has(consigneeCountry) ? 'EU' : 'EX', typeBadge: 'E' };
+  }
+  if (consigneeIsNorway && !consignorIsNorway) {
+    // Inbound to Norway
+    return { declarationType: consignorCountry && EU_COUNTRIES.has(consignorCountry) ? 'EU' : 'IM', typeBadge: 'C' };
+  }
+  return null; // both Norway, both foreign, or unknown — nothing sensible to classify
+}
+
+/** Looks up a selected company's country by name; Brreg-verified companies
+ * (not in the local address book) are always Norwegian, since Brreg only
+ * covers Norwegian entities. */
+function getCompanyCountry(companies: CompanyData[], name: string): string | undefined {
+  if (!name) return undefined;
+  const match = companies.find((c) => c.name === name);
+  return match?.country ?? 'Norway';
+}
 
 const CURRENCIES = ['NOK', 'EUR', 'USD', 'GBP', 'SEK', 'DKK'];
-const IMPORT_EXPORT_OPTIONS = ['Export', 'Import'];
 const MESSAGE_DECLARATION_TYPE_OPTIONS = [
   'FU - Complete',
   'KO - Correction',
@@ -92,7 +127,6 @@ const CUSTOMS_UNITS = [
   'Drammen-Central',
   'Fredrikstad-Unit'
 ];
-const COMPANY_NAMES = COMPANIES.map(c => c.name);
 
 // Historical exchange rate table (mirrors Norges Bank's currency rate list:
 // Valuta / Valutakode / F.o.m dato / T.o.m dato / Myntenhet / NOK). Used to
@@ -169,13 +203,28 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 1 }
   ]
 };
-const VERIFIED_COMPANIES = Object.fromEntries(
-  COMPANIES.map(c => [c.name, c.verified || false])
-);
 
 export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail, editingRecord, onUpdate }: AddAssignmentModalProps) {
+  // Address book — loaded from Supabase (seeded once if empty) instead of a
+  // hardcoded array, so it's shared and can grow over time.
+  const [companies, setCompanies] = useState<CompanyData[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    seedAddressesIfEmpty()
+      .then((entries) => {
+        if (!cancelled) setCompanies(entries.map(addressEntryToCompanyData));
+      })
+      .catch((err) => console.error('Error loading address book from Supabase:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const companyNames = companies.map((c) => c.name);
+  const verifiedCompanies = Object.fromEntries(companies.map((c) => [c.name, c.verified || false]));
+
   const [formData, setFormData] = useState({
-    importExport: 'Export',
     messageDeclarationType: '',
     managedBy: 'Andreas Karlsson',
     customsClearanceUnit: '',
@@ -186,6 +235,16 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     consigneeName: '',
     consigneeAddress: ''
   });
+
+  // Import/Export/EU is derived automatically from the Consignor/Consignee
+  // countries (see classifyDeclarationDirection) — no manual picker anymore.
+  const [autoClassification, setAutoClassification] = useState<{ declarationType: 'EX' | 'IM' | 'EU'; typeBadge: 'E' | 'C' } | null>(null);
+
+  useEffect(() => {
+    const consignorCountry = getCompanyCountry(companies, formData.consignorName);
+    const consigneeCountry = getCompanyCountry(companies, formData.consigneeName);
+    setAutoClassification(classifyDeclarationDirection(consignorCountry, consigneeCountry));
+  }, [formData.consignorName, formData.consigneeName, companies]);
 
   const [invoices, setInvoices] = useState<InvoiceRow[]>([
     {
@@ -216,14 +275,13 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   const originalInvoicesRef = useRef(invoices);
   const originalFreightAndCostsRef = useRef(freightAndCosts);
   const originalCurrencyRateRef = useRef(currencyRate);
-  const importExportRef = useRef<CustomDropdownRef>(null);
+  const messageDeclarationTypeRef = useRef<CustomDropdownRef>(null);
 
   // Load data when editing
   useEffect(() => {
     if (editingRecord && isOpen) {
       // Map the record data to form fields
       const newFormData = {
-        importExport: editingRecord.declarationType === 'IM' ? 'Import' : 'Export',
         messageDeclarationType: editingRecord.messageDeclarationType || '',
         managedBy: editingRecord.managedBy || 'Andreas Karlsson',
         customsClearanceUnit: editingRecord.customsClearanceUnit || '',
@@ -265,7 +323,6 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     } else if (!editingRecord && isOpen) {
       // Reset to defaults for create mode
       const defaultFormData = {
-        importExport: 'Export',
         messageDeclarationType: '',
         managedBy: 'Andreas Karlsson',
         customsClearanceUnit: '',
@@ -377,10 +434,15 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   const totals = calculateTotals();
 
   const handleSave = () => {
+    // Fallback ('EX'/'E') covers the edge case where direction couldn't be
+    // classified yet (e.g. Consignor/Consignee not both selected) — Save is
+    // already disabled in that state via isSaveDisabled below, so this only
+    // matters as a defensive default, never the normal path.
+    const classification = autoClassification ?? { declarationType: 'EX' as const, typeBadge: 'E' as const };
     const assignmentData: Omit<TableRowData, 'id'> = {
       status: editingRecord?.status || 'O',
-      typeBadge: formData.importExport === 'Export' ? 'E' : 'C',
-      declarationType: formData.importExport === 'Export' ? 'EX' : 'IM',
+      typeBadge: classification.typeBadge,
+      declarationType: classification.declarationType,
       messageDeclarationType: formData.messageDeclarationType,
       managedBy: formData.managedBy,
       customsClearanceUnit: formData.customsClearanceUnit,
@@ -477,7 +539,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   };
 
   const handleVerifiedClick = (companyName: string) => {
-    const company = COMPANIES.find(c => c.name === companyName);
+    const company = companies.find(c => c.name === companyName);
     if (company) {
       setSelectedOrgData(company);
       setShowOrgModal(true);
@@ -487,6 +549,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   const isSaveDisabled = !hasChanges || 
     !formData.consignorName ||
     !formData.consigneeName ||
+    !autoClassification ||
     !invoices.some(inv => inv.totalAmount && parseNumber(inv.totalAmount) > 0);
 
   return (
@@ -521,7 +584,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
               onKeyDown={(e) => {
                 if (e.key === 'Tab' && !e.shiftKey) {
                   e.preventDefault();
-                  importExportRef.current?.focus();
+                  messageDeclarationTypeRef.current?.focus();
                 }
               }}
               tabIndex={103}
@@ -538,26 +601,18 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         <div className="relative size-full overflow-auto">
           <div className="box-border content-stretch flex flex-col gap-[24px] items-start relative size-full pt-[20px] pr-[24px] pb-[0px] pl-[24px]">
 
-            {/* Top Fields - 3 columns x 2 rows */}
+            {/* Top Fields - 3 columns x 2 rows (Import/Export removed — now
+                derived automatically from Consignor/Consignee countries) */}
             <div className="grid grid-cols-3 gap-[16px] w-full">
-              <CustomDropdown
-                label="IMPORT / EXPORT"
-                numberPrefix="1"
-                value={formData.importExport}
-                options={IMPORT_EXPORT_OPTIONS}
-                onChange={(value) => setFormData({ ...formData, importExport: value })}
-                tabIndex={1}
-                autoFocus={true}
-                ref={importExportRef}
-              />
-
               <CustomDropdown
                 label="MESSAGE / DECLARATION TYPE"
                 value={formData.messageDeclarationType}
                 options={MESSAGE_DECLARATION_TYPE_OPTIONS}
                 onChange={(value) => setFormData({ ...formData, messageDeclarationType: value })}
                 placeholder="Select type"
-                tabIndex={2}
+                tabIndex={1}
+                autoFocus={true}
+                ref={messageDeclarationTypeRef}
               />
 
               <CustomDropdown
@@ -566,7 +621,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 options={MANAGED_BY_OPTIONS}
                 onChange={(value) => setFormData({ ...formData, managedBy: value })}
                 placeholder="Select person"
-                tabIndex={3}
+                tabIndex={2}
               />
 
               <CustomDropdown
@@ -575,7 +630,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 options={CUSTOMS_UNITS}
                 onChange={(value) => setFormData({ ...formData, customsClearanceUnit: value })}
                 placeholder="Select unit"
-                tabIndex={4}
+                tabIndex={3}
               />
 
               <FormInput
@@ -584,7 +639,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 value={formData.declarationDate}
                 placeholder="DD/MM/YYYY"
                 onChange={(value) => setFormData({ ...formData, declarationDate: value })}
-                tabIndex={5}
+                tabIndex={4}
               />
 
               <FormInput
@@ -592,7 +647,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 value={formData.internalReference}
                 placeholder="Add"
                 onChange={(value) => setFormData({ ...formData, internalReference: value })}
-                tabIndex={6}
+                tabIndex={5}
               />
             </div>
 
@@ -604,9 +659,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   label="Consignor"
                   numberPrefix="3"
                   value={formData.consignorName}
-                  options={COMPANY_NAMES}
+                  options={companyNames}
                   onChange={(value) => {
-                    const company = COMPANIES.find(c => c.name === value);
+                    const company = companies.find(c => c.name === value);
                     setFormData({ 
                       ...formData, 
                       consignorName: value,
@@ -615,7 +670,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   }}
                   placeholder="Search Norwegian companies..."
                   tabIndex={50}
-                  verifiedOptions={VERIFIED_COMPANIES}
+                  verifiedOptions={verifiedCompanies}
                   onVerifiedClick={handleVerifiedClick}
                   enableApiSearch={true}
                   onApiResultSelect={(company: BrregCompany) => {
@@ -640,7 +695,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   }}
                 />
                 {formData.consignorName && (() => {
-                  const company = COMPANIES.find(c => c.name === formData.consignorName);
+                  const company = companies.find(c => c.name === formData.consignorName);
                   if (!company) return null;
                   
                   const isVerified = company.verified === true;
@@ -702,9 +757,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   label="Consignee"
                   numberPrefix="8"
                   value={formData.consigneeName}
-                  options={COMPANY_NAMES}
+                  options={companyNames}
                   onChange={(value) => {
-                    const company = COMPANIES.find(c => c.name === value);
+                    const company = companies.find(c => c.name === value);
                     setFormData({ 
                       ...formData, 
                       consigneeName: value,
@@ -713,7 +768,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   }}
                   placeholder="Search Norwegian companies..."
                   tabIndex={51}
-                  verifiedOptions={VERIFIED_COMPANIES}
+                  verifiedOptions={verifiedCompanies}
                   onVerifiedClick={handleVerifiedClick}
                   enableApiSearch={true}
                   onApiResultSelect={(company: BrregCompany) => {
@@ -735,7 +790,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   }}
                 />
                 {formData.consigneeName && (() => {
-                  const company = COMPANIES.find(c => c.name === formData.consigneeName);
+                  const company = companies.find(c => c.name === formData.consigneeName);
                   if (!company) return null;
                   
                   const isVerified = company.verified === true;
@@ -791,6 +846,32 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 })()}
               </div>
             </div>
+
+            {/* Auto-derived direction, shown for confirmation — no manual override */}
+            {autoClassification && (
+              <div className="w-full flex items-center gap-[8px] -mt-[8px]">
+                <span
+                  className="bg-[#003160] text-white text-[10px] font-bold uppercase tracking-[0.7px] px-[8px] py-[3px] rounded-[2px]"
+                >
+                  {autoClassification.declarationType}
+                </span>
+                <span className="text-[11px] text-gray-500 font-['Inter']">
+                  {autoClassification.declarationType === 'EU'
+                    ? 'Classified as EU trade, based on Consignor/Consignee countries'
+                    : autoClassification.declarationType === 'IM'
+                      ? 'Classified as Import, based on Consignor/Consignee countries'
+                      : 'Classified as Export, based on Consignor/Consignee countries'}
+                </span>
+              </div>
+            )}
+            {!autoClassification && formData.consignorName && formData.consigneeName && (
+              <div className="w-full flex items-center gap-[8px] -mt-[8px]">
+                <TriangleAlert className="w-[14px] h-[14px] text-[#D0021B] shrink-0" />
+                <span className="text-[11px] text-[#D0021B] font-['Inter']">
+                  Can't determine Import/Export/EU — one side of the shipment must be in Norway.
+                </span>
+              </div>
+            )}
 
             {/* Invoice/s Section with Custom Table */}
             <InvoiceTable
@@ -1022,7 +1103,6 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         }}
         prefillData={pendingBrregCompany}
         onSave={(organizationData: OrganizationFormData) => {
-          // Add the new organization to the COMPANIES array
           const newCompany: CompanyData = {
             name: organizationData.organizationName,
             address: organizationData.address,
@@ -1034,9 +1114,30 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
             postcode: organizationData.postCode,
             country: 'Norway'
           };
-          COMPANIES.push(newCompany);
-          COMPANY_NAMES.push(newCompany.name);
-          VERIFIED_COMPANIES[newCompany.name] = true; // Mark as verified
+
+          // Reflect it immediately in this session's dropdown...
+          setCompanies((prev) => [...prev, newCompany]);
+
+          // ...and persist it to Supabase so it's there for everyone next time.
+          createAddress({
+            name: newCompany.name,
+            alias: '',
+            associatedOrganization: newCompany.orgName || '',
+            address: newCompany.address,
+            address2: '',
+            address3: '',
+            countryCode: 'NO',
+            country: 'Norway',
+            postCode: newCompany.postcode || '',
+            city: newCompany.city || '',
+            state: newCompany.state || '',
+            contactPerson: '',
+            phoneNo: '',
+            emailAddress: '',
+            associatedCustomer: '',
+            orgNo: newCompany.orgNo || '',
+            verified: true
+          }).catch((err) => console.error('Error saving new address to Supabase:', err));
           
           // Also select this company in the form
           setFormData({

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import svgPaths from "../imports/svg-pw63lxz1i1";
-import { Search, Check, Building2, X, Loader2, Plus } from 'lucide-react';
+import { Search, Check, Building2, X, Loader2, Plus, ShieldCheck } from 'lucide-react';
 
 interface CustomDropdownProps {
   label?: string;
@@ -384,14 +384,22 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
                     tabIndex={0}
                     onClick={() => handleSelect(option)}
                     onKeyDown={(e) => handleOptionKeyDown(e, option, index)}
-                    className={`px-[10px] py-[8px] font-[Inter] text-[12px] cursor-pointer focus:outline-none flex items-center justify-between ${
+                    className={`px-[10px] py-[8px] font-[Inter] text-[12px] cursor-pointer focus:outline-none flex items-center justify-between gap-2 ${
                       selectedValue === option 
                         ? 'bg-[#DFE5EB] text-[#003160] hover:bg-[#CDD6E0] focus:bg-[#CDD6E0]' 
                         : 'text-black hover:bg-[#f5f5f5] focus:bg-[#f5f5f5]'
                     }`}
                   >
-                    <span>{option}</span>
-                    <div className="flex items-center gap-2">
+                    <span className="truncate">{option}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {enableApiSearch && (
+                        <span
+                          className="flex items-center gap-1 bg-neutral-100 text-neutral-500 px-[6px] py-[2px] rounded-full"
+                          title="From your local address book, not Brønnøysundregistrene"
+                        >
+                          <span className="text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">Address book</span>
+                        </span>
+                      )}
                       {verifiedOptions?.[option] && (
                         <button
                           type="button"
@@ -526,7 +534,13 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
                             )}
                             <div className="text-[11px] text-[#999] mt-0.5">Org.nr: {company.organisasjonsnummer}</div>
                           </div>
-                          <Building2 className="w-[14px] h-[14px] text-[#003160] flex-shrink-0 mt-0.5" />
+                          <div
+                            className="flex items-center gap-1 shrink-0 mt-0.5 bg-[#E1F5EE] text-[#0F6E56] px-[6px] py-[2px] rounded-full"
+                            title="From Brønnøysundregistrene (live lookup)"
+                          >
+                            <ShieldCheck className="w-[12px] h-[12px]" />
+                            <span className="text-[9px] font-bold uppercase tracking-wide whitespace-nowrap">Brreg</span>
+                          </div>
                         </div>
                       </div>
                     );

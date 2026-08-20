@@ -353,10 +353,10 @@ export function TopBar({
                   {detailData?.status ? <StatusBadge status={detailData.status} /> : <div className="bg-[#9e9e9e] h-[16px] w-[20px] rounded-[1px]" />}
                   <div
                     className="bg-[#003160] content-stretch flex items-center justify-center h-[16px] px-[4px] rounded-[1px] shrink-0"
-                    title={detailData?.importExport === 'Import' ? 'Import' : 'Export'}
+                    title={detailData?.importExport === 'IM' ? 'Import' : detailData?.importExport === 'EU' ? 'EU trade' : 'Export'}
                   >
                     <p className="font-['Inter'] text-[10px] font-semibold text-white uppercase leading-none">
-                      {detailData?.importExport === 'Import' ? 'IM' : 'EX'}
+                      {detailData?.importExport || 'EX'}
                     </p>
                   </div>
                 </div>
@@ -393,7 +393,9 @@ export function TopBar({
                 </div>
                 <div className="content-stretch flex flex-col gap-px items-start leading-[normal] not-italic" data-name="Label + Text">
                   <p className="font-['Calibre:SemiBold',sans-serif] overflow-ellipsis overflow-hidden relative shrink-0 text-[#003160] text-[10px] text-nowrap tracking-[0.7px] uppercase w-full font-bold">Type</p>
-                  <p className="font-['Calibre:Regular',sans-serif] relative shrink-0 text-[12px] text-black w-full">{detailData?.importExport || 'Import'}</p>
+                  <p className="font-['Calibre:Regular',sans-serif] relative shrink-0 text-[12px] text-black w-full">
+                    {detailData?.importExport === 'IM' ? 'Import' : detailData?.importExport === 'EU' ? 'EU trade' : 'Export'}
+                  </p>
                 </div>
                 <div className="content-stretch flex flex-col gap-px items-start leading-[normal] not-italic" data-name="Label + Text">
                   <p className="font-['Calibre:SemiBold',sans-serif] overflow-ellipsis overflow-hidden relative shrink-0 text-[#003160] text-[10px] text-nowrap tracking-[0.7px] uppercase w-full font-bold">Department</p>
