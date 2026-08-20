@@ -43,6 +43,11 @@ export interface TableRowData {
   // Temporary/Draft). "Open" and "Processed" tabs use the existing
   // status/processed fields instead, since those already carry real meaning.
   stage?: 'created' | 'error' | 'message' | 'sent' | 'temporary' | 'draft';
+  // Set when "Validate and Send" successfully sends the declaration — kept
+  // separate from `processed` (which means customs has cleared it, a later,
+  // distinct step) so the header's "Send Date" and the Processed tab don't
+  // get conflated.
+  sentDate?: string;
   processed: string;
   referenceDeclaration: string;
   recalculatedFrom: string;
@@ -98,6 +103,7 @@ export function migrateRecord(raw: Partial<TableRowData> & { id: string }): Tabl
     freightAndCosts: raw.freightAndCosts ?? '',
     currencyRate: raw.currencyRate ?? '1',
     stage: raw.stage ?? 'created',
+    sentDate: raw.sentDate ?? '',
     processed: raw.processed ?? '',
     referenceDeclaration: raw.referenceDeclaration ?? '',
     recalculatedFrom: raw.recalculatedFrom ?? '',

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { GenericEditableTable } from './GenericEditableTable';
 import type { GenericColumn } from './GenericEditableTable';
 import type { TableRowData } from './TableRow';
@@ -10,8 +10,9 @@ import {
   fetchItemLines,
   saveItemLines
 } from '../lib/declarationsApi';
-import { fetchLogs, type LogEntry } from '../lib/logsApi';
+import { fetchLogs, addLog, type LogEntry } from '../lib/logsApi';
 import { listDocuments, uploadDocument, deleteDocument, type DocumentFile } from '../lib/documentsApi';
+import { generateCmrPdf } from '../lib/cmrPdf';
 import { FormInput } from './FormInput';
 import { FormSelect } from './FormSelect';
 import { FormTextarea } from './FormTextarea';
@@ -84,6 +85,13 @@ export interface DetailViewProps {
   onClosePdfPreview?: () => void;
 }
 
+/** Imperative handle exposed via ref — lets TopBar's "Validate and Send"
+ * button trigger the send flow, even though the data it needs to validate
+ * (GENERAL form fields, Items totals) only exists inside this component. */
+export interface DetailViewRef {
+  validateAndSend: () => void;
+}
+
 interface ItemLineRow {
   id: string;
   itemLineNo: string;
@@ -133,7 +141,7 @@ interface GeneralFormData {
   noOfParcels: string;
 }
 
-export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange, headerHeight = 0, onEditClick, onUpdateRecord, pdfPreviewOpen = false, onClosePdfPreview }: DetailViewProps) {
+export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange, headerHeight = 0, onEditClick, onUpdateRecord, pdfPreviewOpen = false, onClosePdfPreview }, ref) {
   // Height of the fixed Details/Items tab bar rendered below the TopBar.
   const TAB_BAR_HEIGHT = 60;
 
@@ -501,6 +509,78 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
     );
   }, [detailData]);
 
+  // "Validate and Send" — triggered from TopBar via the ref exposed below,
+  // since the data it needs to check only lives here (GENERAL form fields,
+  // the Items totals).
+  const REQUIRED_GENERAL_FIELDS: (keyof GeneralFormData)[] = [
+    'controlNo', 'declarationType', 'transactionType', 'referenceNo', 'container',
+    'goodsPositionNo', 'noOfParcels', 'countryDispatch', 'countryDestination',
+    'deliveryTerms', 'deliveryPlace', 'nationality', 'customsOffice', 'transportMode', 'locationGoods'
+  ];
+
+  const [sendState, setSendState] = useState<'idle' | 'sending'>('idle');
+  const [sendError, setSendError] = useState<string | null>(null);
+
+  const validateAndSend = useCallback(() => {
+    setSendError(null);
+
+    // 1. Every field with an orange declaration-form box number must be filled in.
+    const missing = REQUIRED_GENERAL_FIELDS.filter((key) => !formData[key] || !formData[key].trim());
+    if (missing.length > 0) {
+      setSendError(`${missing.length} required field${missing.length > 1 ? 's' : ''} still empty — every orange box-numbered field in Details must be filled in before sending.`);
+      setActiveTab('details');
+      return;
+    }
+
+    // 2. Invoice totals must match what's actually been itemized in Items.
+    const closeEnough = (a: number, b: number) => Math.abs(a - b) < 0.01;
+    const parseAmount = (v: string | undefined) => parseFloat((v || '0').replace(/,/g, '')) || 0;
+    const invoiceAmount = parseAmount(record.value);
+    const invoiceNetWeight = parseAmount(record.netWeight);
+    const invoiceGrossWeight = parseAmount(record.grossWeight);
+    const invoiceParcels = parseAmount(record.noOfParcels);
+
+    if (
+      !closeEnough(invoiceAmount, itemsSummary.totalAmount) ||
+      !closeEnough(invoiceNetWeight, itemsSummary.totalNetWeight) ||
+      !closeEnough(invoiceGrossWeight, itemsSummary.totalGrossWeight) ||
+      !closeEnough(invoiceParcels, itemsSummary.totalNoOfParcels)
+    ) {
+      setSendError('Invoice totals (amount, weight, parcels) don\u2019t match what\u2019s itemized in Items — every invoiced unit must be fully accounted for before sending.');
+      setActiveTab('items');
+      return;
+    }
+
+    // 3. Show the sending animation, then actually "send".
+    setSendState('sending');
+
+    setTimeout(() => {
+      try {
+        const blob = generateCmrPdf(record, formData, detailData);
+        const file = new File([blob], `CMR-Waybill-${record.customsNo || record.id}.pdf`, { type: 'application/pdf' });
+        uploadDocument(record.id, file)
+          .then(() => {
+            if (activeTab === 'documents') refreshDocuments();
+          })
+          .catch((err) => console.error('Error uploading generated CMR document:', err));
+      } catch (err) {
+        console.error('Error generating CMR PDF:', err);
+      }
+
+      const today = new Date();
+      const formattedToday = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
+      onUpdateRecord?.({ stage: 'sent', sentDate: formattedToday });
+
+      addLog(record.id, 'sent', 'Declaration sent to customs').catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
+
+      setSendState('idle');
+    }, 1800);
+  }, [formData, record, itemsSummary, detailData, onUpdateRecord, activeTab]);
+
+  useImperativeHandle(ref, () => ({ validateAndSend }), [validateAndSend]);
+
   useEffect(() => {
     onItemsSummaryChange?.(itemsSummary);
   }, [itemsSummary, onItemsSummaryChange]);
@@ -821,6 +901,17 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
   }), [groupDefs, formData]);
 
   return (
+    <>
+      {/* "Sending to Customs" overlay — shown while validateAndSend runs */}
+      {sendState === 'sending' && (
+        <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-[6px] px-[32px] py-[28px] flex flex-col items-center gap-[16px] shadow-lg">
+            <div className="size-[36px] border-[3px] border-[#e0e0e0] border-t-[#446BF9] rounded-full animate-spin" />
+            <p className="text-[#003160] text-[14px] font-semibold">Sending to Customs…</p>
+          </div>
+        </div>
+      )}
+
     <div 
       className={`flex flex-col bg-white ${isResizingPanel ? 'select-none' : ''}`} 
       style={{ 
@@ -873,6 +964,19 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
           Documents
         </button>
       </div>
+
+      {/* Validation error from "Validate and Send" — fixed just below the tab bar so it's visible regardless of scroll position */}
+      {sendError && (
+        <div
+          className="fixed z-[60] bg-[#FDECEA] border border-[#F5C2C0] text-[#7A271A] text-[13px] px-[16px] py-[10px] rounded-[4px] shadow-md flex items-center gap-[12px]"
+          style={{ top: `${headerHeight + TAB_BAR_HEIGHT + 12}px`, left: `${sidebarWidth + 20}px`, right: '20px' }}
+        >
+          <span className="flex-1">{sendError}</span>
+          <button onClick={() => setSendError(null)} className="cursor-pointer hover:opacity-70">
+            <X className="size-[14px]" />
+          </button>
+        </div>
+      )}
 
       {/* Main content (Details/Items). Margin-right makes room for the panel
           so it genuinely pushes/resizes the content instead of overlaying it. */}
@@ -1493,5 +1597,8 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
         onSave={handleSaveArticle}
       />
     </div>
+    </>
   );
-}
+});
+
+DetailView.displayName = 'DetailView';

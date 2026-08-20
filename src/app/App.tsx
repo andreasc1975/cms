@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { getSectionIcon } from './config/sectionIcons';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { FilterBar } from './components/FilterBar';
 import { SearchBar } from './components/SearchBar';
 import { DataTable } from './components/DataTable';
-import { DetailView } from './components/DetailView';
+import { DetailView, type DetailViewRef } from './components/DetailView';
 
 import { AddAssignmentModal } from './components/AddAssignmentModal';
 import { ConfirmationDialog } from './components/ConfirmationDialog';
@@ -258,6 +258,10 @@ function App() {
   // (rather than inside DetailView) because the icon that toggles it sits in
   // TopBar, a sibling component.
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  // Lets TopBar's "Validate and Send" button trigger DetailView's own
+  // validation/send logic, since the data it needs (GENERAL form, Items
+  // totals) only lives inside DetailView.
+  const detailViewRef = useRef<DetailViewRef>(null);
 
   useEffect(() => {
     setPdfPreviewOpen(false);
@@ -1118,6 +1122,7 @@ function App() {
         onDeleteSelected={handleDeleteSelected}
         onEditClick={() => selectedRecordId && handleEditRow(selectedRecordId)}
         onPdfPreviewClick={() => setPdfPreviewOpen((v) => !v)}
+        onValidateAndSend={() => detailViewRef.current?.validateAndSend()}
         hasSelection={selectedRows.size > 0}
         showBackButton={!!selectedRecordId}
         sidebarWidth={sidebarWidth}
@@ -1132,7 +1137,7 @@ function App() {
           return {
             status: record.status,
             customsNo: record.customsNo,
-            sendDate: record.processed,
+            sendDate: record.sentDate,
             importExport: record.declarationType || (record.typeBadge === 'E' ? 'EX' : 'IM'),
             messageDeclarationType: record.messageDeclarationType,
             managedBy: record.managedBy || 'Not assigned',
@@ -1157,6 +1162,7 @@ function App() {
         selectedRecordId && data.find(r => r.id === selectedRecordId) ? (
           <DetailView
             key={selectedRecordId}
+            ref={detailViewRef}
             record={data.find(r => r.id === selectedRecordId)!}
             onBack={handleBackFromDetail}
             sidebarWidth={sidebarWidth}

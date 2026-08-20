@@ -12,6 +12,7 @@ interface TopBarProps {
   onDeleteSelected?: () => void;
   onEditClick?: () => void;
   onPdfPreviewClick?: () => void;
+  onValidateAndSend?: () => void;
   onBackClick?: () => void;
   showBackButton?: boolean;
   hasSelection?: boolean;
@@ -78,6 +79,7 @@ export function TopBar({
   onDeleteSelected, 
   onEditClick, 
   onPdfPreviewClick, 
+  onValidateAndSend, 
   onBackClick, 
   showBackButton = false, 
   hasSelection = false, 
@@ -477,6 +479,7 @@ export function TopBar({
 
               {/* Validate and Send */}
               <button
+                onClick={onValidateAndSend}
                 className="bg-gradient-to-t from-[#0058ac] to-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
                 data-name="Button/Validate and Send"
               >
