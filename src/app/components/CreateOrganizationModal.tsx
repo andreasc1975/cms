@@ -34,7 +34,7 @@ export interface OrganizationFormData {
   alias: string;
 }
 
-const COUNTRY_CODES = [
+export const COUNTRY_CODES = [
   { value: 'NO', label: 'NO | Norway' },
   { value: 'SE', label: 'SE | Sweden' },
   { value: 'DK', label: 'DK | Denmark' },
@@ -42,7 +42,26 @@ const COUNTRY_CODES = [
   { value: 'DE', label: 'DE | Germany' },
   { value: 'GB', label: 'GB | United Kingdom' },
   { value: 'US', label: 'US | United States' },
+  { value: 'FR', label: 'FR | France' },
+  { value: 'NL', label: 'NL | Netherlands' },
+  { value: 'BE', label: 'BE | Belgium' },
+  { value: 'AT', label: 'AT | Austria' },
+  { value: 'PL', label: 'PL | Poland' },
+  { value: 'IT', label: 'IT | Italy' },
+  { value: 'ES', label: 'ES | Spain' },
+  { value: 'PT', label: 'PT | Portugal' },
+  { value: 'IE', label: 'IE | Ireland' },
+  { value: 'CH', label: 'CH | Switzerland' },
+  { value: 'JP', label: 'JP | Japan' },
+  { value: 'CN', label: 'CN | China' },
 ];
+
+/** Full country name for a 2-letter code, e.g. 'SE' -> 'Sweden'. Falls back
+ * to the code itself if it's not in the list above. */
+export function countryNameFromCode(code: string): string {
+  const match = COUNTRY_CODES.find((c) => c.value === code);
+  return match ? match.label.split(' | ')[1] : code;
+}
 
 export function CreateOrganizationModal({ isOpen, onClose, onSave, prefillData }: CreateOrganizationModalProps) {
   const [formData, setFormData] = useState<OrganizationFormData>({
@@ -78,7 +97,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSave, prefillData }
       setFormData({
         organizationName: prefillData.navn,
         organizationNumber: prefillData.organisasjonsnummer,
-        countryCode: 'NO',
+        countryCode: address?.landkode || 'NO',
         customsCreditNumber: '',
         exporterApprovalNumber: '',
         exporterAuthorizationNumber: '',

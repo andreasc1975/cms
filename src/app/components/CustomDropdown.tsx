@@ -34,6 +34,7 @@ export interface BrregCompany {
     poststed?: string;
     kommune?: string;
     land?: string;
+    landkode?: string;
   };
   postadresse?: {
     adresse?: string[];
@@ -41,6 +42,7 @@ export interface BrregCompany {
     poststed?: string;
     kommune?: string;
     land?: string;
+    landkode?: string;
   };
 }
 

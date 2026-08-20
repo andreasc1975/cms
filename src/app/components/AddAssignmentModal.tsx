@@ -9,7 +9,7 @@ import { Calendar as CalendarComponent } from './ui/calendar';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { OrganizationDetailModal } from './OrganizationDetailModal';
 import { InvoiceTable, type InvoiceRow } from './InvoiceTable';
-import { CreateOrganizationModal, type OrganizationFormData } from './CreateOrganizationModal';
+import { CreateOrganizationModal, type OrganizationFormData, countryNameFromCode } from './CreateOrganizationModal';
 import { fetchAddresses, createAddress, seedAddressesIfEmpty, type AddressEntry } from '../lib/addressesApi';
 
 interface AddAssignmentModalProps {
@@ -1117,6 +1117,11 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         }}
         prefillData={pendingBrregCompany}
         onSave={(organizationData: OrganizationFormData) => {
+          // Use the real country from the form (which itself now reflects
+          // Brreg's actual address data), instead of assuming Norway —
+          // Brreg only requires a Norwegian org number, not a Norwegian
+          // business address (e.g. NUF entities can be based abroad).
+          const countryName = countryNameFromCode(organizationData.countryCode);
           const newCompany: CompanyData = {
             name: organizationData.organizationName,
             address: organizationData.address,
@@ -1126,7 +1131,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
             city: organizationData.city,
             state: organizationData.state,
             postcode: organizationData.postCode,
-            country: 'Norway'
+            country: countryName
           };
 
           // Reflect it immediately in this session's dropdown...
@@ -1140,8 +1145,8 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
             address: newCompany.address,
             address2: '',
             address3: '',
-            countryCode: 'NO',
-            country: 'Norway',
+            countryCode: organizationData.countryCode,
+            country: countryName,
             postCode: newCompany.postcode || '',
             city: newCompany.city || '',
             state: newCompany.state || '',
