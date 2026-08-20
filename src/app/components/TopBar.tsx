@@ -389,7 +389,11 @@ export function TopBar({
                   <p className={`relative shrink-0 text-[12px] w-full ${detailData?.sendDate ? "font-['Calibre:Regular',sans-serif] text-black" : 'text-[#999]'}`}>{detailData?.sendDate || 'not sent'}</p>
                 </div>
 
-                <div /> {/* spacer under the status badge column */}
+                <div className="content-stretch flex flex-col gap-px items-start leading-[normal] not-italic" data-name="Label + Text">
+                  <p className="font-['Calibre:SemiBold',sans-serif] overflow-ellipsis overflow-hidden relative shrink-0 text-[#003160] text-[10px] text-nowrap tracking-[0.7px] uppercase w-full font-bold">Related declarations</p>
+                  {/* Not built yet — always "none" for now, no such functionality exists to link declarations together. */}
+                  <p className="relative shrink-0 text-[12px] text-[#999] w-full">none</p>
+                </div>
                 <div className="content-stretch flex flex-col gap-px items-start leading-[normal] not-italic" data-name="Label + Text">
                   <p className="font-['Calibre:SemiBold',sans-serif] overflow-ellipsis overflow-hidden relative shrink-0 text-[#003160] text-[10px] text-nowrap tracking-[0.7px] uppercase w-full font-bold">Customs receipt</p>
                   <p className="font-['Calibre:Regular',sans-serif] relative shrink-0 text-[12px] text-black w-full">{customsReceipt}</p>
