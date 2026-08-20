@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { createPortal } from 'react-dom';
 import svgPaths from "../imports/svg-pw63lxz1i1";
 import { Search, Check, Building2, X, Loader2, Plus, ShieldCheck } from 'lucide-react';
 
@@ -88,6 +89,12 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // The dropdown menu renders in a portal (see below) so it's never clipped
+  // by an ancestor's overflow:auto/hidden — e.g. the scrollable Details tab
+  // content. menuRef lets click-outside detection still work correctly even
+  // though the menu is no longer a DOM descendant of dropdownRef.
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -114,7 +121,10 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const clickedInsideTrigger = dropdownRef.current?.contains(target);
+      const clickedInsideMenu = menuRef.current?.contains(target);
+      if (!clickedInsideTrigger && !clickedInsideMenu) {
         setIsOpen(false);
         setSearchQuery('');
         setIsSearching(false);
@@ -130,6 +140,29 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
     
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Keep the portal-rendered menu positioned under the trigger — recomputed
+  // whenever it opens, and whenever the page scrolls/resizes while it's open
+  // (since the menu is no longer inside the scrollable ancestor that would
+  // otherwise move it along automatically).
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const updatePosition = () => {
+      if (dropdownRef.current) {
+        const rect = dropdownRef.current.getBoundingClientRect();
+        setMenuStyle({ top: rect.bottom + 2, left: rect.left, width: rect.width });
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [isOpen]);
 
@@ -496,9 +529,14 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
           </div>
         </div>
 
-        {/* Dropdown Menu */}
-        {isOpen && (
-          <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white border border-[#e0e0e0] rounded-[2px] shadow-[0px_3px_10px_0px_rgba(0,0,0,0.12)] z-[9999]">
+        {/* Dropdown Menu — rendered in a portal so ancestor overflow:auto
+            (e.g. the scrollable Details tab) can never clip it */}
+        {isOpen && menuStyle && createPortal(
+          <div
+            ref={menuRef}
+            className="fixed bg-white border border-[#e0e0e0] rounded-[2px] shadow-[0px_3px_10px_0px_rgba(0,0,0,0.12)] z-[9999]"
+            style={{ top: menuStyle.top, left: menuStyle.left, width: menuStyle.width }}
+          >
             {/* Options List - No separate search input */}
             <div className="overflow-y-auto max-h-[240px]">
               {isLoading ? (
@@ -616,7 +654,8 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
                 Add new organization manually
               </button>
             )}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>
