@@ -236,8 +236,13 @@ export function CreateOrganizationModal({ isOpen, onClose, onSave, prefillData }
                         <input
                           type="text"
                           value={formData.organizationName}
-                          readOnly
-                          className="relative z-10 w-full h-full pl-[10px] pr-[10px] bg-transparent border-none appearance-none cursor-not-allowed font-[Inter] text-[12px] text-left outline-none text-[#666]"
+                          readOnly={!!prefillData}
+                          onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
+                          placeholder={prefillData ? '' : 'Organization name'}
+                          tabIndex={1}
+                          className={`relative z-10 w-full h-full pl-[10px] pr-[10px] bg-transparent border-none appearance-none font-[Inter] text-[12px] text-left outline-none ${
+                            prefillData ? 'cursor-not-allowed text-[#666]' : 'cursor-text text-black'
+                          }`}
                         />
                       </div>
                     </div>
@@ -255,8 +260,13 @@ export function CreateOrganizationModal({ isOpen, onClose, onSave, prefillData }
                         <input
                           type="text"
                           value={formData.organizationNumber}
-                          readOnly
-                          className="relative z-10 w-full h-full pl-[10px] pr-[10px] bg-transparent border-none appearance-none cursor-not-allowed font-[Inter] text-[12px] text-left outline-none text-[#666]"
+                          readOnly={!!prefillData}
+                          onChange={(e) => setFormData({ ...formData, organizationNumber: e.target.value })}
+                          placeholder={prefillData ? '' : 'Organization number'}
+                          tabIndex={2}
+                          className={`relative z-10 w-full h-full pl-[10px] pr-[10px] bg-transparent border-none appearance-none font-[Inter] text-[12px] text-left outline-none ${
+                            prefillData ? 'cursor-not-allowed text-[#666]' : 'cursor-text text-black'
+                          }`}
                         />
                       </div>
                     </div>
