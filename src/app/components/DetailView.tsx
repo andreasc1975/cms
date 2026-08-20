@@ -13,6 +13,7 @@ import {
 import { fetchLogs, addLog, type LogEntry } from '../lib/logsApi';
 import { listDocuments, uploadDocument, deleteDocument, type DocumentFile } from '../lib/documentsApi';
 import { generateCmrPdf } from '../lib/cmrPdf';
+import { generateSadPdf } from '../lib/sadPdf';
 import { FormInput } from './FormInput';
 import { FormSelect } from './FormSelect';
 import { FormTextarea } from './FormTextarea';
@@ -508,6 +509,41 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       .then(() => refreshDocuments())
       .catch((err) => console.error('Error deleting document from Supabase Storage:', err));
   };
+
+  // Document Preview panel — fills the real RD-0019 Enhetsdokument (the
+  // actual Norwegian customs form template) with this declaration's data,
+  // instead of a hand-built mockup. Regenerated whenever the panel opens.
+  const [sadPdfUrl, setSadPdfUrl] = useState<string | null>(null);
+  const [sadPdfLoading, setSadPdfLoading] = useState(false);
+  const [sadPdfError, setSadPdfError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pdfPreviewOpen) return;
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    setSadPdfLoading(true);
+    setSadPdfError(null);
+    generateSadPdf(record, formData, detailData)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSadPdfUrl(objectUrl);
+      })
+      .catch((err) => {
+        console.error('Error generating SAD PDF preview:', err);
+        if (!cancelled) setSadPdfError('Could not generate the document preview.');
+      })
+      .finally(() => {
+        if (!cancelled) setSadPdfLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdfPreviewOpen, record.id, record.consignorName, record.consigneeName, record.value, record.netWeight, record.grossWeight, formData.declarationType, detailData]);
 
   // Auto-assigns box 32 "Item Line No" — as soon as any other field on a row
   // has a value, that row gets the next sequential number (1, 2, 3...) among
@@ -1592,8 +1628,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
           reservation (it has no tab bar of its own), so it starts right below
           the header with a clean, small top gap instead of inheriting the
           tab bar's 60px band. Pushes content via the margin-right set above,
-          rather than overlaying it. No real PDF template is wired up yet, so
-          this renders a placeholder mockup using the actual record data. */}
+          rather than overlaying it. Fills the real RD-0019 Enhetsdokument
+          template (public/rd-0019-template.pdf) with the declaration's data
+          via pdf-lib — see lib/sadPdf.ts. */}
       <div
         className="fixed overflow-hidden border-l border-gray-200 bg-neutral-50 z-40"
         style={{
@@ -1625,47 +1662,22 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
             </button>
           </div>
 
-          <div className="flex-1 overflow-auto p-[16px]">
-            <div className="bg-white border border-gray-300 shadow-sm mx-auto p-[20px]" style={{ maxWidth: Math.max(280, panelWidth - 72) }}>
-              <div className="flex items-center justify-center gap-[8px] mb-[16px]">
-                <FileText className="size-[16px] text-gray-400" strokeWidth={2} />
-                <p className="text-[10px] text-gray-500 uppercase tracking-[0.7px]">Single Administrative Document</p>
+          <div className="flex-1 overflow-hidden bg-neutral-200">
+            {sadPdfLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <p className="text-[13px] text-gray-400">Generating preview…</p>
               </div>
-              <p className="text-[14px] font-bold text-[#003160] text-center mb-[16px]">Customs Declaration</p>
-
-              <div className="grid grid-cols-2 gap-[12px] text-[11px]">
-                <div>
-                  <p className="text-[9px] text-[#ff8f00] font-bold uppercase">1. Declaration</p>
-                  <p className="text-black">{formData.declarationType || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-[#003160] font-bold uppercase">Declaration No</p>
-                  <p className="text-black">{record.customsNo || '—'}</p>
-                </div>
-                <div className="col-span-2 border-t border-gray-100 pt-[8px]">
-                  <p className="text-[9px] text-[#ff8f00] font-bold uppercase">2. Consignor</p>
-                  <p className="text-black">{record.consignorName || '—'}</p>
-                  <p className="text-black">{record.sender?.address || ''}</p>
-                </div>
-                <div className="col-span-2 border-t border-gray-100 pt-[8px]">
-                  <p className="text-[9px] text-[#ff8f00] font-bold uppercase">8. Consignee</p>
-                  <p className="text-black">{record.consigneeName || '—'}</p>
-                  <p className="text-black">{record.consignee?.address || ''}</p>
-                </div>
-                <div className="border-t border-gray-100 pt-[8px]">
-                  <p className="text-[9px] text-[#ff8f00] font-bold uppercase">48. Control No</p>
-                  <p className="text-black">{formData.controlNo || '—'}</p>
-                </div>
-                <div className="border-t border-gray-100 pt-[8px]">
-                  <p className="text-[9px] text-[#003160] font-bold uppercase">Date</p>
-                  <p className="text-black">{record.declared || '—'}</p>
-                </div>
+            ) : sadPdfError ? (
+              <div className="h-full flex items-center justify-center px-[16px]">
+                <p className="text-[13px] text-[#D0021B] text-center">{sadPdfError}</p>
               </div>
-            </div>
-
-            <p className="text-[11px] text-gray-400 text-center mt-[16px] px-[8px]">
-              Placeholder preview — connect a real PDF template to replace this mockup with the actual declaration document layout.
-            </p>
+            ) : sadPdfUrl ? (
+              <iframe
+                src={sadPdfUrl}
+                title="Document preview"
+                className="w-full h-full border-0"
+              />
+            ) : null}
           </div>
         </div>
       </div>
