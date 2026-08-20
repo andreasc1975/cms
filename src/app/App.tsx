@@ -176,53 +176,41 @@ const STORAGE_KEYS = {
 };
 
 // Default tab order
-const DEFAULT_TAB_ORDER = ['all', 'open', 'cleared', 'manual', 'electronic'];
+const DEFAULT_TAB_ORDER = ['all', 'open', 'created', 'error', 'message', 'sent', 'processed', 'temporary', 'draft'];
 
 // Demo Personal tabs for prototype/demo purposes
 const DEMO_PERSONAL_TABS: FilterTemplate[] = [
   {
-    id: 'demo-central-region',
-    name: 'Central Region',
+    id: 'demo-open-eu-trade',
+    name: 'Open EU Trade',
     criteria: {
-      status: '',
-      progress: [],
-      type: '',
-      order: '',
+      status: ['O', 'PO'],
+      type: ['EU'],
       goodsNo: '',
-      date: '',
-      description: '',
-      transportId: '',
       sender: '',
       consignee: '',
       owner: '',
-      customsReceipt: '',
-      customsOfficer: 'Central',
-      caseManager: '',
-      storedPackages: '',
-      storedWeight: '',
+      declaredFrom: '',
+      declaredTo: '',
+      processedFrom: '',
+      processedTo: '',
       exclusions: {}
     }
   },
   {
-    id: 'demo-high-value',
-    name: 'High Value Items',
+    id: 'demo-cleared-exports',
+    name: 'Cleared Exports',
     criteria: {
-      status: '',
-      progress: [],
-      type: '',
-      order: '',
+      status: ['C'],
+      type: ['EX'],
       goodsNo: '',
-      date: '',
-      description: '',
-      transportId: '',
       sender: '',
       consignee: '',
       owner: '',
-      customsReceipt: '',
-      customsOfficer: '',
-      caseManager: '',
-      storedPackages: '200',
-      storedWeight: '5000',
+      declaredFrom: '',
+      declaredTo: '',
+      processedFrom: '',
+      processedTo: '',
       exclusions: {}
     }
   },
@@ -230,22 +218,16 @@ const DEMO_PERSONAL_TABS: FilterTemplate[] = [
     id: 'demo-pending-review',
     name: 'Pending Review',
     criteria: {
-      status: 'OPEN',
-      progress: ['50-75', '75-99'],
-      type: '',
-      order: '',
+      status: ['O', 'PO'],
+      type: [],
       goodsNo: '',
-      date: '',
-      description: '',
-      transportId: '',
       sender: '',
       consignee: '',
       owner: '',
-      customsReceipt: '',
-      customsOfficer: '',
-      caseManager: '',
-      storedPackages: '',
-      storedWeight: '',
+      declaredFrom: '',
+      declaredTo: '',
+      processedFrom: '',
+      processedTo: '',
       exclusions: {}
     }
   }
@@ -378,22 +360,16 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const defaultCriteria: FilterCriteria = {
-    status: '',
-    progress: [],
-    type: '',
-    order: '',
+    status: [],
+    type: [],
     goodsNo: '',
-    date: '',
-    description: '',
-    transportId: '',
     sender: '',
     consignee: '',
     owner: '',
-    customsReceipt: '',
-    customsOfficer: '',
-    caseManager: '',
-    storedPackages: '',
-    storedWeight: '',
+    declaredFrom: '',
+    declaredTo: '',
+    processedFrom: '',
+    processedTo: '',
     exclusions: {}
   };
   
@@ -442,44 +418,28 @@ function App() {
   // Track manually added filters
   const [manuallyAddedFilters, setManuallyAddedFilters] = useState<Set<string>>(new Set());
   
-  // Default criteria for each filter type
+  // Default criteria for each filter type — the 9 built-in tabs (All/Open/
+  // Created/Error/Message/Sent/Processed/Temporary/Draft) filter directly
+  // against stage/status/processed in filteredData below, not through the
+  // detailed FilterCriteria panel, so they all just reset it to blank.
+  // Only saved templates carry their own real criteria.
   const getDefaultCriteriaForFilter = useCallback((filterId: string): FilterCriteria => {
     const baseDefault: FilterCriteria = {
-      status: '',
-      progress: [],
-      type: '',
-      order: '',
+      status: [],
+      type: [],
       goodsNo: '',
-      date: '',
-      description: '',
-      transportId: '',
       sender: '',
       consignee: '',
       owner: '',
-      customsReceipt: '',
-      customsOfficer: '',
-      caseManager: '',
-      storedPackages: '',
-      storedWeight: '',
+      declaredFrom: '',
+      declaredTo: '',
+      processedFrom: '',
+      processedTo: '',
       exclusions: {}
     };
     
-    switch (filterId) {
-      case 'all':
-        return baseDefault;
-      case 'open':
-        return { ...baseDefault, status: 'OPEN' };
-      case 'cleared':
-        return { ...baseDefault, status: 'C' };
-      case 'manual':
-        return { ...baseDefault, type: 'manual' };
-      case 'electronic':
-        return { ...baseDefault, type: 'electronic' };
-      default:
-        // Check if it's a template
-        const template = templates.find(t => t.id === filterId);
-        return template ? { ...template.criteria } : baseDefault;
-    }
+    const template = templates.find(t => t.id === filterId);
+    return template ? { ...template.criteria } : baseDefault;
   }, [templates]);
   
   // Persist filter criteria
@@ -525,9 +485,8 @@ function App() {
     
     // Compare each field
     const fieldsToCheck: (keyof FilterCriteria)[] = [
-      'status', 'progress', 'type', 'order', 'goodsNo', 'date', 'description',
-      'transportId', 'sender', 'consignee', 'owner', 'customsReceipt',
-      'customsOfficer', 'caseManager', 'storedPackages', 'storedWeight'
+      'status', 'type', 'goodsNo', 'sender', 'consignee', 'owner',
+      'declaredFrom', 'declaredTo', 'processedFrom', 'processedTo'
     ];
     
     return fieldsToCheck.some(field => {
@@ -733,28 +692,90 @@ function App() {
         item.owner.name.toLowerCase().includes(query)
       );
     }
-    
-    // Status filter
-    if (filterCriteria.status) {
-      const isExcluded = filterCriteria.exclusions?.status;
-      if (filterCriteria.status === 'OPEN') {
-        result = result.filter(item => {
-          const matches = item.status === 'O' || item.status === 'PO';
-          return isExcluded ? !matches : matches;
-        });
-      } else {
-        result = result.filter(item => {
-          const matches = item.status === filterCriteria.status;
-          return isExcluded ? !matches : matches;
-        });
-      }
+
+    // Tab-level filter — the 9 built-in FilterBar tabs each check a specific,
+    // real condition directly (not via the detailed FilterCriteria panel).
+    // Saved templates and 'all' skip this and rely on the panel criteria below.
+    switch (currentFilter) {
+      case 'open':
+        result = result.filter(item => item.status === 'O' || item.status === 'PO');
+        break;
+      case 'created':
+        result = result.filter(item => (item.stage || 'created') === 'created');
+        break;
+      case 'error':
+        result = result.filter(item => item.stage === 'error');
+        break;
+      case 'message':
+        result = result.filter(item => item.stage === 'message');
+        break;
+      case 'sent':
+        result = result.filter(item => item.stage === 'sent');
+        break;
+      case 'processed':
+        result = result.filter(item => !!item.processed);
+        break;
+      case 'temporary':
+        result = result.filter(item => item.stage === 'temporary');
+        break;
+      case 'draft':
+        result = result.filter(item => item.stage === 'draft');
+        break;
+      // 'all' and template ids: no tab-level filter here.
     }
     
-    // NOTE: the old "Progress" filter (withdrawn vs. stored packages/weight)
-    // and "Type" filter ('manual'/'electronic') referenced fields that no
-    // longer exist on TableRowData — they belonged to a warehouse-withdrawal
-    // data model this app no longer uses. Removed rather than guess-mapped
-    // onto today's fields (typeBadge has different values/meaning).
+    // Status filter (multi-select — matches any of the selected statuses)
+    if (filterCriteria.status && filterCriteria.status.length > 0) {
+      const isExcluded = filterCriteria.exclusions?.status;
+      result = result.filter(item => {
+        const matches = filterCriteria.status.includes(item.status);
+        return isExcluded ? !matches : matches;
+      });
+    }
+
+    // Type filter (multi-select — EX/IM/EU classification)
+    if (filterCriteria.type && filterCriteria.type.length > 0) {
+      const isExcluded = filterCriteria.exclusions?.type;
+      result = result.filter(item => {
+        const matches = !!item.declarationType && filterCriteria.type.includes(item.declarationType);
+        return isExcluded ? !matches : matches;
+      });
+    }
+
+    // Date range filters — dates are stored as DD.MM.YYYY strings, so compare
+    // via Date objects rather than string comparison.
+    const parseDMY = (s: string): number | null => {
+      if (!s) return null;
+      const parts = s.split('.');
+      if (parts.length !== 3) return null;
+      const [d, m, y] = parts.map(Number);
+      if (!d || !m || !y) return null;
+      return new Date(y, m - 1, d).getTime();
+    };
+
+    if (filterCriteria.declaredFrom || filterCriteria.declaredTo) {
+      const isExcluded = filterCriteria.exclusions?.declaredFrom || filterCriteria.exclusions?.declaredTo;
+      const from = parseDMY(filterCriteria.declaredFrom);
+      const to = parseDMY(filterCriteria.declaredTo);
+      result = result.filter(item => {
+        const itemDate = parseDMY(item.declared);
+        if (itemDate === null) return isExcluded ? true : false;
+        const matches = (from === null || itemDate >= from) && (to === null || itemDate <= to);
+        return isExcluded ? !matches : matches;
+      });
+    }
+
+    if (filterCriteria.processedFrom || filterCriteria.processedTo) {
+      const isExcluded = filterCriteria.exclusions?.processedFrom || filterCriteria.exclusions?.processedTo;
+      const from = parseDMY(filterCriteria.processedFrom);
+      const to = parseDMY(filterCriteria.processedTo);
+      result = result.filter(item => {
+        const itemDate = parseDMY(item.processed);
+        if (itemDate === null) return isExcluded ? true : false;
+        const matches = (from === null || itemDate >= from) && (to === null || itemDate <= to);
+        return isExcluded ? !matches : matches;
+      });
+    }
     
     // Text filters — only fields that actually exist on TableRowData today.
     const textFilters: (keyof FilterCriteria)[] = ['goodsNo'];
@@ -771,8 +792,7 @@ function App() {
       }
     });
     
-    // Company filters (sender, consignee, owner) — 'customsOfficer' removed,
-    // no such field exists on TableRowData.
+    // Company filters (sender, consignee, owner)
     const companyFilters: (keyof FilterCriteria)[] = ['sender', 'consignee', 'owner'];
     
     companyFilters.forEach(field => {
@@ -789,28 +809,22 @@ function App() {
       }
     });
     
-    // NOTE: the old numeric filters (storedPackages/storedWeight) referenced
-    // fields that no longer exist on TableRowData — removed along with the
-    // Progress/Type filters above, for the same reason.
-    
     return result;
-  }, [data, filterCriteria, searchQuery]);
+  }, [data, filterCriteria, searchQuery, currentFilter]);
   
   // Calculate counts for filter tabs
   const filterCounts = useMemo(() => {
     const all = data.length;
     const open = data.filter(item => item.status === 'O' || item.status === 'PO').length;
-    const cleared = data.filter(item => item.status === 'C').length;
-    // 'manual'/'electronic' were based on an item.type field that no longer
-    // exists on TableRowData (the old warehouse-withdrawal data model).
-    // Kept as static 0s so the "Manual"/"Electronic" tabs in FilterBar still
-    // render without crashing; they need real criteria once it's decided
-    // what those tabs should map to in today's schema (typeBadge is 'C'/'E'/'P',
-    // a different concept, so it isn't a safe direct substitute).
-    const manual = 0;
-    const electronic = 0;
+    const created = data.filter(item => (item.stage || 'created') === 'created').length;
+    const error = data.filter(item => item.stage === 'error').length;
+    const message = data.filter(item => item.stage === 'message').length;
+    const sent = data.filter(item => item.stage === 'sent').length;
+    const processed = data.filter(item => !!item.processed).length;
+    const temporary = data.filter(item => item.stage === 'temporary').length;
+    const draft = data.filter(item => item.stage === 'draft').length;
     
-    return { all, open, cleared, manual, electronic };
+    return { all, open, created, error, message, sent, processed, temporary, draft };
   }, [data]);
   
   // Calculate template counts
@@ -818,23 +832,15 @@ function App() {
     const counts = new Map<string, number>();
     
     templates.forEach(template => {
-      // Temporarily apply template criteria and count matches
       let result = data;
       
-      // Apply all template criteria
-      if (template.criteria.status) {
-        if (template.criteria.status === 'OPEN') {
-          result = result.filter(item => item.status === 'O' || item.status === 'PO');
-        } else {
-          result = result.filter(item => item.status === template.criteria.status);
-        }
+      if (template.criteria.status && template.criteria.status.length > 0) {
+        result = result.filter(item => template.criteria.status.includes(item.status));
       }
       
-      // NOTE: template.criteria.type filtering removed — it compared against
-      // an item.type field that no longer exists on TableRowData (see note
-      // on filterCounts.manual/electronic above).
-      
-      // Add other criteria as needed...
+      if (template.criteria.type && template.criteria.type.length > 0) {
+        result = result.filter(item => !!item.declarationType && template.criteria.type.includes(item.declarationType));
+      }
       
       counts.set(template.id, result.length);
     });
@@ -1235,7 +1241,6 @@ function App() {
         onRenameTemplate={handleRenameTemplate}
         onDeleteTemplate={handleDeleteTemplate}
         companies={COMPANIES}
-        customsOfficers={CUSTOMS_OFFICES}
         manuallyAddedFilters={manuallyAddedFilters}
       />
       

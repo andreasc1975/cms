@@ -10,9 +10,13 @@ interface FilterBarProps {
   counts: {
     all: number;
     open: number;
-    cleared: number;
-    manual: number;
-    electronic: number;
+    created: number;
+    error: number;
+    message: number;
+    sent: number;
+    processed: number;
+    temporary: number;
+    draft: number;
   };
   sidebarWidth?: number;
   filterDrawerOpen?: boolean;
@@ -270,57 +274,25 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
   // Helper function to get active filter chips
   const getActiveFilterChips = () => {
     const chips: { key: string; label: string; field: string; isManual: boolean; isExcluded: boolean }[] = [];
-    
-    // Always show status chip if it exists (except on ALL tab when empty)
-    const shouldShowStatusChip = () => {
-      if (!filterCriteria.status) return false;
-      return true;
-    };
-    
-    // Always show type chip if it exists (except on ALL tab when empty)
-    const shouldShowTypeChip = () => {
-      if (!filterCriteria.type) return false;
-      return true;
-    };
 
-    // Status filter
-    if (shouldShowStatusChip()) {
-      const statusLabel = filterCriteria.status === 'OPEN' ? 'Open/Partly Open' : 
-                         filterCriteria.status === 'C' ? 'Cleared' : filterCriteria.status;
+    // Status filter (multi-select array)
+    const statusLabels: Record<string, string> = { O: 'Open', PO: 'Partly Open', C: 'Cleared' };
+    if (filterCriteria.status && filterCriteria.status.length > 0) {
       chips.push({ 
         key: 'status', 
-        label: `STATUS: ${statusLabel}`, 
+        label: `STATUS: ${filterCriteria.status.map((s: string) => statusLabels[s] || s).join(', ')}`, 
         field: 'status',
         isManual: isManualFilter('status', filterCriteria.status),
         isExcluded: isExcluded('status')
       });
     }
 
-    // Progress filter (multi-select)
-    if (filterCriteria.progress && filterCriteria.progress.length > 0) {
-      const progressLabels = filterCriteria.progress.map((p: string) => {
-        if (p === '0-25') return '0-25%';
-        if (p === '25-50') return '25-50%';
-        if (p === '50-75') return '50-75%';
-        if (p === '75-99') return '75-99%';
-        if (p === '100') return '100%';
-        return p;
-      }).join(', ');
-      chips.push({ 
-        key: 'progress', 
-        label: `PROGRESS: ${progressLabels}`, 
-        field: 'progress',
-        isManual: isManualFilter('progress', filterCriteria.progress),
-        isExcluded: isExcluded('progress')
-      });
-    }
-
-    // Type filter
-    if (shouldShowTypeChip()) {
-      const typeLabel = filterCriteria.type === 'manual' ? 'Manual' : 'Electronic';
+    // Type filter (multi-select array — Export/Import/EU classification)
+    const typeLabels: Record<string, string> = { EX: 'Export', IM: 'Import', EU: 'EU Trade' };
+    if (filterCriteria.type && filterCriteria.type.length > 0) {
       chips.push({ 
         key: 'type', 
-        label: `TYPE: ${typeLabel}`, 
+        label: `TYPE: ${filterCriteria.type.map((t: string) => typeLabels[t] || t).join(', ')}`, 
         field: 'type',
         isManual: isManualFilter('type', filterCriteria.type),
         isExcluded: isExcluded('type')
@@ -328,15 +300,6 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
     }
 
     // Text filters
-    if (filterCriteria.order) {
-      chips.push({ 
-        key: 'order', 
-        label: `ORDER: ${filterCriteria.order}`, 
-        field: 'order',
-        isManual: isManualFilter('order', filterCriteria.order),
-        isExcluded: isExcluded('order')
-      });
-    }
     if (filterCriteria.goodsNo) {
       chips.push({ 
         key: 'goodsNo', 
@@ -346,33 +309,31 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
         isExcluded: isExcluded('goodsNo')
       });
     }
-    if (filterCriteria.date) {
+
+    // Date range filters
+    if (filterCriteria.declaredFrom || filterCriteria.declaredTo) {
+      const from = filterCriteria.declaredFrom || '…';
+      const to = filterCriteria.declaredTo || '…';
       chips.push({ 
-        key: 'date', 
-        label: `DATE: ${filterCriteria.date}`, 
-        field: 'date',
-        isManual: isManualFilter('date', filterCriteria.date),
-        isExcluded: isExcluded('date')
+        key: 'declaredRange', 
+        label: `DECLARATION DATE: ${from} – ${to}`, 
+        field: filterCriteria.declaredFrom ? 'declaredFrom' : 'declaredTo',
+        isManual: isManualFilter('declaredFrom', filterCriteria.declaredFrom) || isManualFilter('declaredTo', filterCriteria.declaredTo),
+        isExcluded: isExcluded('declaredFrom') || isExcluded('declaredTo')
       });
     }
-    if (filterCriteria.description) {
+    if (filterCriteria.processedFrom || filterCriteria.processedTo) {
+      const from = filterCriteria.processedFrom || '…';
+      const to = filterCriteria.processedTo || '…';
       chips.push({ 
-        key: 'description', 
-        label: `DESCRIPTION: ${filterCriteria.description}`, 
-        field: 'description',
-        isManual: isManualFilter('description', filterCriteria.description),
-        isExcluded: isExcluded('description')
+        key: 'processedRange', 
+        label: `PROCESSED DATE: ${from} – ${to}`, 
+        field: filterCriteria.processedFrom ? 'processedFrom' : 'processedTo',
+        isManual: isManualFilter('processedFrom', filterCriteria.processedFrom) || isManualFilter('processedTo', filterCriteria.processedTo),
+        isExcluded: isExcluded('processedFrom') || isExcluded('processedTo')
       });
     }
-    if (filterCriteria.transportId) {
-      chips.push({ 
-        key: 'transportId', 
-        label: `TRANSPORT ID: ${filterCriteria.transportId}`, 
-        field: 'transportId',
-        isManual: isManualFilter('transportId', filterCriteria.transportId),
-        isExcluded: isExcluded('transportId')
-      });
-    }
+
     if (filterCriteria.sender) {
       chips.push({ 
         key: 'sender', 
@@ -398,51 +359,6 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
         field: 'owner',
         isManual: isManualFilter('owner', filterCriteria.owner),
         isExcluded: isExcluded('owner')
-      });
-    }
-    if (filterCriteria.customsReceipt) {
-      chips.push({ 
-        key: 'customsReceipt', 
-        label: `CUSTOMS RECEIPT: ${filterCriteria.customsReceipt}`, 
-        field: 'customsReceipt',
-        isManual: isManualFilter('customsReceipt', filterCriteria.customsReceipt),
-        isExcluded: isExcluded('customsReceipt')
-      });
-    }
-    if (filterCriteria.customsOfficer) {
-      chips.push({ 
-        key: 'customsOfficer', 
-        label: `CUSTOMS OFFICER: ${filterCriteria.customsOfficer}`, 
-        field: 'customsOfficer',
-        isManual: isManualFilter('customsOfficer', filterCriteria.customsOfficer),
-        isExcluded: isExcluded('customsOfficer')
-      });
-    }
-    if (filterCriteria.caseManager) {
-      chips.push({ 
-        key: 'caseManager', 
-        label: `CASE MANAGER: ${filterCriteria.caseManager}`, 
-        field: 'caseManager',
-        isManual: isManualFilter('caseManager', filterCriteria.caseManager),
-        isExcluded: isExcluded('caseManager')
-      });
-    }
-    if (filterCriteria.storedPackages) {
-      chips.push({ 
-        key: 'storedPackages', 
-        label: `STORED PACKAGES: ${filterCriteria.storedPackages}`, 
-        field: 'storedPackages',
-        isManual: isManualFilter('storedPackages', filterCriteria.storedPackages),
-        isExcluded: isExcluded('storedPackages')
-      });
-    }
-    if (filterCriteria.storedWeight) {
-      chips.push({ 
-        key: 'storedWeight', 
-        label: `STORED WEIGHT: ${filterCriteria.storedWeight}`, 
-        field: 'storedWeight',
-        isManual: isManualFilter('storedWeight', filterCriteria.storedWeight),
-        isExcluded: isExcluded('storedWeight')
       });
     }
 
@@ -535,10 +451,14 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
             // Render default tab
             const tabConfig: { [key: string]: { label: string; count: number } } = {
               all: { label: 'All', count: counts.all },
-              open: { label: 'open', count: counts.open },
-              cleared: { label: 'Cleared', count: counts.cleared },
-              manual: { label: 'Manual', count: counts.manual },
-              electronic: { label: 'Electronic', count: counts.electronic }
+              open: { label: 'Open', count: counts.open },
+              created: { label: 'Created', count: counts.created },
+              error: { label: 'Error', count: counts.error },
+              message: { label: 'Message', count: counts.message },
+              sent: { label: 'Sent', count: counts.sent },
+              processed: { label: 'Processed', count: counts.processed },
+              temporary: { label: 'Temporary', count: counts.temporary },
+              draft: { label: 'Draft', count: counts.draft }
             };
             
             const config = tabConfig[tabId];
@@ -567,31 +487,59 @@ export function FilterBar({ onFilterChange, onFilterClick, counts, sidebarWidth 
             />
             <FilterButton 
               id="open"
-              label="open"
+              label="Open"
               count={counts.open}
               isActive={activeFilter === 'open'}
               showModifiedIndicator={currentFilter === 'open' && hasModifiedFilters}
             />
             <FilterButton 
-              id="cleared"
-              label="Cleared"
-              count={counts.cleared}
-              isActive={activeFilter === 'cleared'}
-              showModifiedIndicator={currentFilter === 'cleared' && hasModifiedFilters}
+              id="created"
+              label="Created"
+              count={counts.created}
+              isActive={activeFilter === 'created'}
+              showModifiedIndicator={currentFilter === 'created' && hasModifiedFilters}
             />
             <FilterButton 
-              id="manual"
-              label="Manual"
-              count={counts.manual}
-              isActive={activeFilter === 'manual'}
-              showModifiedIndicator={currentFilter === 'manual' && hasModifiedFilters}
+              id="error"
+              label="Error"
+              count={counts.error}
+              isActive={activeFilter === 'error'}
+              showModifiedIndicator={currentFilter === 'error' && hasModifiedFilters}
             />
             <FilterButton 
-              id="electronic"
-              label="Electronic"
-              count={counts.electronic}
-              isActive={activeFilter === 'electronic'}
-              showModifiedIndicator={currentFilter === 'electronic' && hasModifiedFilters}
+              id="message"
+              label="Message"
+              count={counts.message}
+              isActive={activeFilter === 'message'}
+              showModifiedIndicator={currentFilter === 'message' && hasModifiedFilters}
+            />
+            <FilterButton 
+              id="sent"
+              label="Sent"
+              count={counts.sent}
+              isActive={activeFilter === 'sent'}
+              showModifiedIndicator={currentFilter === 'sent' && hasModifiedFilters}
+            />
+            <FilterButton 
+              id="processed"
+              label="Processed"
+              count={counts.processed}
+              isActive={activeFilter === 'processed'}
+              showModifiedIndicator={currentFilter === 'processed' && hasModifiedFilters}
+            />
+            <FilterButton 
+              id="temporary"
+              label="Temporary"
+              count={counts.temporary}
+              isActive={activeFilter === 'temporary'}
+              showModifiedIndicator={currentFilter === 'temporary' && hasModifiedFilters}
+            />
+            <FilterButton 
+              id="draft"
+              label="Draft"
+              count={counts.draft}
+              isActive={activeFilter === 'draft'}
+              showModifiedIndicator={currentFilter === 'draft' && hasModifiedFilters}
             />
             {templates.map(template => (
               <FilterButton 

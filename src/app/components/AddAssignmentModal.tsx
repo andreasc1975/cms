@@ -445,6 +445,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     const classification = autoClassification ?? { declarationType: 'EX' as const, typeBadge: 'E' as const };
     const assignmentData: Omit<TableRowData, 'id'> = {
       status: editingRecord?.status || 'O',
+      stage: editingRecord?.stage || 'created',
       typeBadge: classification.typeBadge,
       declarationType: classification.declarationType,
       messageDeclarationType: formData.messageDeclarationType,

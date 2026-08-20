@@ -39,6 +39,10 @@ export interface TableRowData {
   invoices?: InvoiceRow[];
   freightAndCosts?: string;
   currencyRate?: string;
+  // Lifecycle stage for the new filter tabs (Created/Error/Message/Sent/
+  // Temporary/Draft). "Open" and "Processed" tabs use the existing
+  // status/processed fields instead, since those already carry real meaning.
+  stage?: 'created' | 'error' | 'message' | 'sent' | 'temporary' | 'draft';
   processed: string;
   referenceDeclaration: string;
   recalculatedFrom: string;
@@ -93,6 +97,7 @@ export function migrateRecord(raw: Partial<TableRowData> & { id: string }): Tabl
     invoices: Array.isArray(raw.invoices) ? raw.invoices : [],
     freightAndCosts: raw.freightAndCosts ?? '',
     currencyRate: raw.currencyRate ?? '1',
+    stage: raw.stage ?? 'created',
     processed: raw.processed ?? '',
     referenceDeclaration: raw.referenceDeclaration ?? '',
     recalculatedFrom: raw.recalculatedFrom ?? '',
