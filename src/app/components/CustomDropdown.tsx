@@ -498,7 +498,7 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white border border-[#e0e0e0] rounded-[2px] shadow-[0px_3px_10px_0px_rgba(0,0,0,0.12)] max-h-[240px] overflow-hidden z-[9999]">
+          <div className="absolute top-[calc(100%+2px)] left-0 right-0 bg-white border border-[#e0e0e0] rounded-[2px] shadow-[0px_3px_10px_0px_rgba(0,0,0,0.12)] z-[9999]">
             {/* Options List - No separate search input */}
             <div className="overflow-y-auto max-h-[240px]">
               {isLoading ? (
@@ -610,7 +610,7 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
                   setIsSearching(false);
                   setApiResults([]);
                 }}
-                className="w-full flex items-center gap-2 px-[10px] py-[8px] font-[Inter] text-[12px] text-[#446BF9] font-semibold cursor-pointer border-0 border-t border-t-[#e0e0e0] bg-white hover:bg-[#f5f5f5] transition-colors"
+                className="w-full flex items-center gap-2 px-[10px] py-[8px] font-[Inter] text-[12px] text-[#446BF9] font-semibold cursor-pointer border-0 border-t border-t-[#e0e0e0] bg-white hover:bg-[#f5f5f5] transition-colors rounded-b-[2px]"
               >
                 <Plus className="w-[14px] h-[14px]" />
                 Add new organization manually
