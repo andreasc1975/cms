@@ -19,48 +19,35 @@ interface FilterDrawerProps {
   onRenameTemplate?: (templateId: string) => void;
   onDeleteTemplate?: (templateId: string) => void;
   companies?: { name: string; address: string }[];
-  customsOfficers?: { name: string; address: string }[];
   manuallyAddedFilters?: Set<string>;
 }
 
 export interface FilterCriteria {
-  status: string;
-  progress: string[];
-  type: string;
-  order: string;
+  status: string[];   // 'O' | 'PO' | 'C'
+  type: string[];     // 'EX' | 'IM' | 'EU' — the automatic Import/Export/EU classification
   goodsNo: string;
-  date: string;
-  description: string;
-  transportId: string;
   sender: string;
   consignee: string;
   owner: string;
-  customsReceipt: string;
-  customsOfficer: string;
-  caseManager: string;
-  storedPackages: string;
-  storedWeight: string;
+  declaredFrom: string;
+  declaredTo: string;
+  processedFrom: string;
+  processedTo: string;
   exclusions?: {
     status?: boolean;
-    progress?: boolean;
     type?: boolean;
-    order?: boolean;
     goodsNo?: boolean;
-    date?: boolean;
-    description?: boolean;
-    transportId?: boolean;
     sender?: boolean;
     consignee?: boolean;
     owner?: boolean;
-    customsReceipt?: boolean;
-    customsOfficer?: boolean;
-    caseManager?: boolean;
-    storedPackages?: boolean;
-    storedWeight?: boolean;
+    declaredFrom?: boolean;
+    declaredTo?: boolean;
+    processedFrom?: boolean;
+    processedTo?: boolean;
   };
 }
 
-export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreateTemplate, currentFilter = 'all', templates = [], onSaveTemplate = () => {}, onRenameTemplate = (templateId: string) => {}, onDeleteTemplate = (templateId: string) => {}, companies = [], customsOfficers = [], manuallyAddedFilters = new Set() }: FilterDrawerProps) {
+export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreateTemplate, currentFilter = 'all', templates = [], onSaveTemplate = () => {}, onRenameTemplate = (templateId: string) => {}, onDeleteTemplate = (templateId: string) => {}, companies = [], manuallyAddedFilters = new Set() }: FilterDrawerProps) {
   const [favoriteFields, setFavoriteFields] = useState<Set<keyof FilterCriteria>>(new Set());
   const [isShiftPressed, setIsShiftPressed] = useState(false);
 
@@ -213,7 +200,7 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
           </button>
         </div>
         <Select
-          value={filters[field] || "_all"}
+          value={(filters[field] as string) || "_all"}
           onValueChange={(value) => {
             const newValue = value === "_all" ? "" : value;
             onFilterChange(field, newValue);
@@ -257,7 +244,7 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
     options
   }: {
     label: string;
-    field: 'progress';
+    field: keyof FilterCriteria;
     options: { value: string; label: string }[];
   }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -486,142 +473,12 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
           <input
             ref={inputRef}
             type="text"
-            defaultValue={filters[field]}
+            defaultValue={filters[field] as string}
             onChange={handleChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
             placeholder={placeholder || `Filter by ${label.toLowerCase()}`}
             className="w-full px-[12px] py-[8px] pr-[36px] border border-neutral-300 rounded-[2px] bg-white font-['Inter'] text-[12px] text-[#003160] placeholder:text-neutral-400 focus:outline-none focus:border-[#003160] transition-colors hover:border-neutral-400"
-          />
-          {hasValue && (
-            <button
-              onClick={handleClear}
-              className="absolute right-[8px] top-1/2 transform -translate-y-1/2 p-[4px] hover:opacity-70 transition-opacity cursor-pointer"
-              type="button"
-            >
-              <X className="size-[16px] text-[#446BF9]" strokeWidth={2} />
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const FilterNumericInput = ({ 
-    label, 
-    field 
-  }: { 
-    label: string; 
-    field: keyof FilterCriteria;
-  }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [hasValue, setHasValue] = useState(!!filters[field]);
-    const excluded = isExcluded(field);
-
-    const formatNumber = (value: string): string => {
-      const num = value.replace(/,/g, '');
-      if (num === '') return '';
-      const parsed = parseFloat(num);
-      if (isNaN(parsed)) return '';
-      return parsed.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    };
-
-    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      const formatted = formatNumber(e.target.value);
-      if (inputRef.current) {
-        inputRef.current.value = formatted;
-      }
-      onFilterChange(field, formatted);
-      
-      // Set exclusion based on global shift key state
-      if (formatted.length > 0) {
-        setExclusion(field, isShiftPressed);
-      }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value.replace(/[^0-9]/g, '');
-      if (inputRef.current) {
-        inputRef.current.value = value;
-      }
-      setHasValue(value.length > 0);
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'Escape') {
-        e.currentTarget.blur();
-      }
-      if (e.key === 'Enter') {
-        const formatted = formatNumber(e.currentTarget.value);
-        if (inputRef.current) {
-          inputRef.current.value = formatted;
-        }
-        onFilterChange(field, formatted);
-        if (formatted.length > 0) {
-          setExclusion(field, e.shiftKey);
-        }
-        e.currentTarget.blur();
-      }
-    };
-
-    const handleClear = () => {
-      if (inputRef.current) {
-        inputRef.current.value = '';
-        setHasValue(false);
-        onFilterChange(field, '');
-        inputRef.current.focus();
-      }
-    };
-
-    const isFavorite = favoriteFields.has(field);
-
-    return (
-      <div className="flex flex-col gap-[5px]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[6px]">
-            <label className="font-['Inter'] text-[10px] font-semibold text-[#003160] uppercase tracking-[0.7px]">
-              {label}
-            </label>
-            {hasValue && (
-              <button
-                onClick={() => toggleExclusion(field)}
-                className="p-[2px] hover:opacity-70 transition-opacity cursor-pointer"
-                type="button"
-                title={excluded ? "Click to include" : "Click to exclude"}
-              >
-                {excluded ? (
-                  <Ban className="size-[14px] text-[#FF8F00]" strokeWidth={2.5} />
-                ) : (
-                  <CheckCircle 
-                    className={`size-[14px] ${manuallyAddedFilters.has(field) ? 'text-[#FF8F00]' : 'text-[#003160]'}`}
-                    strokeWidth={2.5} 
-                  />
-                )}
-              </button>
-            )}
-          </div>
-          <button
-            onClick={() => toggleFavorite(field)}
-            className="p-[2px] hover:opacity-70 transition-opacity cursor-pointer"
-            type="button"
-          >
-            {isFavorite ? (
-              <Star className="size-[15px] text-[#FF8F00]" fill="#FF8F00" strokeWidth={2} />
-            ) : (
-              <Star className="size-[15px] text-neutral-400" strokeWidth={2} />
-            )}
-          </button>
-        </div>
-        <div className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            defaultValue={filters[field]}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            placeholder={field === 'storedWeight' ? '0.00' : '0'}
-            className="w-full px-[12px] py-[8px] pr-[36px] border border-neutral-300 rounded-[2px] bg-white font-roboto-mono font-medium text-[12px] text-[#003160] placeholder:text-neutral-400 focus:outline-none focus:border-[#003160] transition-colors text-left hover:border-neutral-400"
           />
           {hasValue && (
             <button
@@ -862,34 +719,28 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
         <div className="flex flex-col gap-[20px]">
           {/* Define all filter fields with their labels */}
           {(() => {
+            const multiSelectFields: Array<{ label: string; field: keyof FilterCriteria; options: { value: string; label: string }[] }> = [
+              {
+                label: 'Status',
+                field: 'status',
+                options: [
+                  { value: 'O', label: 'Open' },
+                  { value: 'PO', label: 'Partly Open' },
+                  { value: 'C', label: 'Cleared' }
+                ]
+              },
+              {
+                label: 'Type',
+                field: 'type',
+                options: [
+                  { value: 'EX', label: 'Export' },
+                  { value: 'IM', label: 'Import' },
+                  { value: 'EU', label: 'EU Trade' }
+                ]
+              }
+            ];
+
             const dropdownFields: Array<{ label: string; field: keyof FilterCriteria; options: { value: string; label: string }[] }> = [
-              { 
-                label: 'Status', 
-                field: 'status', 
-                options: [
-                  { value: 'C', label: 'Cleared' },
-                  { value: 'OPEN', label: 'Open/Partly Open' }
-                ]
-              },
-              { 
-                label: 'Progress', 
-                field: 'progress', 
-                options: [
-                  { value: '0-25', label: '0-25%' },
-                  { value: '25-50', label: '25-50%' },
-                  { value: '50-75', label: '50-75%' },
-                  { value: '75-99', label: '75-99%' },
-                  { value: '100', label: '100%' }
-                ]
-              },
-              { 
-                label: 'Type', 
-                field: 'type', 
-                options: [
-                  { value: 'manual', label: 'Manual' },
-                  { value: 'electronic', label: 'Electronic' }
-                ]
-              },
               {
                 label: 'Sender',
                 field: 'sender',
@@ -904,34 +755,22 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
                 label: 'Owner',
                 field: 'owner',
                 options: companies.map(c => ({ value: c.name, label: c.name }))
-              },
-              {
-                label: 'Customs Officer',
-                field: 'customsOfficer',
-                options: customsOfficers.map(c => ({ value: c.name, label: c.name }))
               }
             ];
 
-            const numericFields: Array<{ label: string; field: keyof FilterCriteria }> = [
-              { label: 'Stored Packages', field: 'storedPackages' },
-              { label: 'Stored Weight', field: 'storedWeight' }
-            ];
-
             const dateFields: Array<{ label: string; field: keyof FilterCriteria }> = [
-              { label: 'Date', field: 'date' }
+              { label: 'Declaration Date (From)', field: 'declaredFrom' },
+              { label: 'Declaration Date (To)', field: 'declaredTo' },
+              { label: 'Processed Date (From)', field: 'processedFrom' },
+              { label: 'Processed Date (To)', field: 'processedTo' }
             ];
 
             const textFields: Array<{ label: string; field: keyof FilterCriteria; placeholder?: string }> = [
-              { label: 'Order', field: 'order' },
-              { label: 'Goods No', field: 'goodsNo' },
-              { label: 'Description', field: 'description' },
-              { label: 'Transport ID', field: 'transportId' },
-              { label: 'Customs Receipt', field: 'customsReceipt' },
-              { label: 'Case Manager', field: 'caseManager' }
+              { label: 'Goods No', field: 'goodsNo' }
             ];
 
             // Combine all field types
-            const allFilterFields = [...dropdownFields, ...numericFields, ...dateFields, ...textFields];
+            const allFilterFields = [...multiSelectFields, ...dropdownFields, ...dateFields, ...textFields];
 
             // Sort fields: favorites first, then original order
             const sortedFields = [...allFilterFields].sort((a, b) => {
@@ -943,38 +782,26 @@ export function FilterDrawer({ isOpen, onClose, filters, onFilterChange, onCreat
             });
 
             return sortedFields.map((fieldConfig) => {
-              // Check field type
-              const isDropdown = 'options' in fieldConfig;
-              const isNumeric = numericFields.some(f => f.field === fieldConfig.field);
+              const isMultiSelect = multiSelectFields.some(f => f.field === fieldConfig.field);
+              const isDropdown = !isMultiSelect && 'options' in fieldConfig;
               const isDate = dateFields.some(f => f.field === fieldConfig.field);
-              
-              if (isDropdown) {
-                // Use MultiSelectDropdown for Progress field
-                if (fieldConfig.field === 'progress') {
-                  return (
-                    <MultiSelectDropdown
-                      key={fieldConfig.field}
-                      label={fieldConfig.label}
-                      field={fieldConfig.field}
-                      options={fieldConfig.options}
-                    />
-                  );
-                }
-                
+
+              if (isMultiSelect) {
+                return (
+                  <MultiSelectDropdown
+                    key={fieldConfig.field}
+                    label={fieldConfig.label}
+                    field={fieldConfig.field}
+                    options={(fieldConfig as any).options}
+                  />
+                );
+              } else if (isDropdown) {
                 return (
                   <FilterDropdown 
                     key={fieldConfig.field} 
                     label={fieldConfig.label} 
                     field={fieldConfig.field} 
-                    options={fieldConfig.options}
-                  />
-                );
-              } else if (isNumeric) {
-                return (
-                  <FilterNumericInput
-                    key={fieldConfig.field}
-                    label={fieldConfig.label}
-                    field={fieldConfig.field}
+                    options={(fieldConfig as any).options}
                   />
                 );
               } else if (isDate) {
