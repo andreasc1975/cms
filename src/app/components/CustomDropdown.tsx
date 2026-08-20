@@ -473,7 +473,7 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
   // Standard form field version
   return (
     <div 
-      className={`relative h-[54px] w-full ${disabled ? 'opacity-50' : ''}`} 
+      className="relative h-[54px] w-full" 
       ref={dropdownRef}
     >
       <div className="absolute left-0 top-0 content-stretch flex items-start justify-between w-full pointer-events-none">
@@ -489,8 +489,8 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
         </div>
       </div>
       
-      <div className={`absolute bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] flex items-center group ${isProposed ? 'bg-[rgba(82,184,156,0.2)]' : 'bg-white'}`}>
-        <div aria-hidden="true" className={`absolute border ${isProposed ? 'border-[#52B89C]' : 'border-[#e0e0e0]'} group-focus-within:border-[#446BF9] border-solid inset-0 pointer-events-none rounded-[2px] transition-colors`} />
+      <div className={`absolute bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] flex items-center group ${disabled ? 'bg-[#f5f5f5]' : isProposed ? 'bg-[rgba(82,184,156,0.2)]' : 'bg-white'}`}>
+        <div aria-hidden="true" className={`absolute border ${disabled ? 'border-[#e0e0e0]' : isProposed ? 'border-[#52B89C]' : 'border-[#e0e0e0]'} group-focus-within:border-[#446BF9] border-solid inset-0 pointer-events-none rounded-[2px] transition-colors`} />
         
         <input
           ref={inputRef}
@@ -503,6 +503,7 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
           tabIndex={tabIndex}
           placeholder={placeholder}
           disabled={disabled}
+          style={disabled && selectedValue ? { WebkitTextFillColor: '#000', color: '#000' } : undefined}
           className={`relative z-10 w-full h-full pl-[10px] ${selectedValue && !isSearching ? 'pr-[76px]' : 'pr-[46px]'} bg-transparent border-none appearance-none ${disabled ? 'cursor-not-allowed' : 'cursor-text'} font-[Inter] text-[12px] text-left outline-none ${
             (selectedValue && !isSearching) ? 'text-black' : 'text-[#999]'
           } ${className}`}

@@ -94,7 +94,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
           </div>
         </div>
         
-        <div className="absolute bg-white bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] group">
+        <div className={`absolute bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] group ${readOnly ? 'bg-[#f5f5f5]' : 'bg-white'}`}>
           <div aria-hidden="true" className="absolute border border-[#e0e0e0] group-focus-within:border-[#446BF9] border-solid inset-0 pointer-events-none rounded-[2px] transition-colors" />
           <Popover 
             open={isDatePickerOpen} 
@@ -114,7 +114,8 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
                 }}
                 readOnly={readOnly}
                 tabIndex={tabIndex}
-                className={`relative z-10 w-full h-full px-[10px] pr-[34px] bg-transparent border-none outline-none text-[12px] text-black placeholder:text-[#9e9e9e] font-[Inter] ${className}`}
+                style={readOnly ? { WebkitTextFillColor: '#000', color: '#000' } : undefined}
+                className={`relative z-10 w-full h-full px-[10px] pr-[34px] bg-transparent border-none outline-none text-[12px] text-black placeholder:text-[#9e9e9e] font-[Inter] ${readOnly ? 'cursor-not-allowed' : ''} ${className}`}
               />
               <PopoverTrigger asChild>
                 <button
@@ -168,7 +169,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
         </div>
       </div>
       
-      <div className={`absolute bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] group ${isProposed ? 'bg-[rgba(82,184,156,0.2)]' : 'bg-white'}`}>
+      <div className={`absolute bottom-0 box-border left-0 right-0 top-[31.48%] rounded-[2px] group ${readOnly ? 'bg-[#f5f5f5]' : isProposed ? 'bg-[rgba(82,184,156,0.2)]' : 'bg-white'}`}>
         <div aria-hidden="true" className={`absolute border ${isProposed ? 'border-[#52B89C]' : 'border-[#e0e0e0]'} group-focus-within:border-[#446BF9] border-solid inset-0 pointer-events-none rounded-[2px] transition-colors`} />
         <input
           type={type}
@@ -180,7 +181,8 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(({
           onKeyDown={onKeyDown} // Add onKeyDown to the input
           readOnly={readOnly}
           tabIndex={tabIndex}
-          className={`relative z-10 w-full h-full px-[10px] bg-transparent border-none outline-none text-[12px] text-black placeholder:text-[#9e9e9e] ${isMonospace ? 'font-[Roboto_Mono]' : 'font-[Inter]'} ${className}`}
+          style={readOnly ? { WebkitTextFillColor: '#000', color: '#000' } : undefined}
+          className={`relative z-10 w-full h-full px-[10px] bg-transparent border-none outline-none text-[12px] text-black placeholder:text-[#9e9e9e] ${readOnly ? 'cursor-not-allowed' : ''} ${isMonospace ? 'font-[Roboto_Mono]' : 'font-[Inter]'} ${className}`}
           ref={ref}
           required={required}
         />
