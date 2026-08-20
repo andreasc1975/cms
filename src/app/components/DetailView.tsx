@@ -10,12 +10,14 @@ import {
   fetchItemLines,
   saveItemLines
 } from '../lib/declarationsApi';
+import { fetchLogs, type LogEntry } from '../lib/logsApi';
+import { listDocuments, uploadDocument, deleteDocument, type DocumentFile } from '../lib/documentsApi';
 import { FormInput } from './FormInput';
 import { FormSelect } from './FormSelect';
 import { FormTextarea } from './FormTextarea';
 import { CustomDropdown, CustomDropdownRef } from './CustomDropdown';
 import { AddArticleModal, type ArticleData } from './AddArticleModal';
-import { Calculator, ListPlus, Pencil, X, FileText } from 'lucide-react';
+import { Calculator, ListPlus, Pencil, X, FileText, Upload, Trash2 } from 'lucide-react';
 
 // 45 Random Countries for dropdowns
 const COUNTRIES = [
@@ -287,7 +289,7 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
 
   // Which of the two pages (Details / Items) is currently shown. The header
   // and this tab bar stay fixed on both.
-  const [activeTab, setActiveTab] = useState<'details' | 'items'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'items' | 'log' | 'documents'>('details');
 
   // GENERAL form data — loaded from Supabase (shared across visitors, not
   // per-browser localStorage). `formDataLoaded` gates the save-effects below
@@ -414,6 +416,70 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
     }, 600);
     return () => clearTimeout(timeout);
   }, [detailData, record.id, itemsLoaded]);
+
+  // Log tab — loaded fresh each time it's opened (no live editing here, so
+  // no debounced save needed, just a straightforward fetch).
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== 'log') return;
+    let cancelled = false;
+    setLogsLoading(true);
+    fetchLogs(record.id)
+      .then((entries) => {
+        if (!cancelled) setLogs(entries);
+      })
+      .catch((err) => console.error('Error loading logs from Supabase:', err))
+      .finally(() => {
+        if (!cancelled) setLogsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, record.id]);
+
+  // Documents tab — files live in Supabase Storage, listed fresh whenever
+  // the tab opens (and after an upload/delete).
+  const [documents, setDocuments] = useState<DocumentFile[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentUploading, setDocumentUploading] = useState(false);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+
+  const refreshDocuments = () => {
+    setDocumentsLoading(true);
+    listDocuments(record.id)
+      .then(setDocuments)
+      .catch((err) => {
+        console.error('Error listing documents from Supabase Storage:', err);
+        setDocumentError('Could not load documents.');
+      })
+      .finally(() => setDocumentsLoading(false));
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'documents') return;
+    refreshDocuments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, record.id]);
+
+  const handleUploadDocument = (file: File) => {
+    setDocumentUploading(true);
+    setDocumentError(null);
+    uploadDocument(record.id, file)
+      .then(() => refreshDocuments())
+      .catch((err) => {
+        console.error('Error uploading document to Supabase Storage:', err);
+        setDocumentError('Upload failed. If this is the first upload, make sure the "declaration-documents" storage bucket exists (see supabase/schema.sql).');
+      })
+      .finally(() => setDocumentUploading(false));
+  };
+
+  const handleDeleteDocument = (path: string) => {
+    deleteDocument(path)
+      .then(() => refreshDocuments())
+      .catch((err) => console.error('Error deleting document from Supabase Storage:', err));
+  };
 
   // Handle data changes from the table
   const handleDataChange = (newData: ItemLineRow[]) => {
@@ -789,6 +855,22 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
           }`}
         >
           Items
+        </button>
+        <button
+          onClick={() => setActiveTab('log')}
+          className={`px-[16px] py-[8px] rounded-[2px] font-['Calibre:SemiBold',sans-serif] text-[12px] font-bold uppercase tracking-[0.7px] transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#446BF9] ${
+            activeTab === 'log' ? 'bg-[#003160] text-white' : 'text-[#003160] hover:bg-[#CDD6E0]'
+          }`}
+        >
+          Log
+        </button>
+        <button
+          onClick={() => setActiveTab('documents')}
+          className={`px-[16px] py-[8px] rounded-[2px] font-['Calibre:SemiBold',sans-serif] text-[12px] font-bold uppercase tracking-[0.7px] transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#446BF9] ${
+            activeTab === 'documents' ? 'bg-[#003160] text-white' : 'text-[#003160] hover:bg-[#CDD6E0]'
+          }`}
+        >
+          Documents
         </button>
       </div>
 
@@ -1233,6 +1315,90 @@ export function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange,
           onDataChange={handleDataChange}
         />
       </div>
+      </div>
+      )}
+
+      {activeTab === 'log' && (
+      <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 px-[10px] pt-[20px] pb-[15px]">
+          <h2 className="text-[#003160] text-[15px] font-bold uppercase mb-[16px]">Log</h2>
+          {logsLoading ? (
+            <p className="text-[13px] text-gray-400">Loading…</p>
+          ) : logs.length === 0 ? (
+            <p className="text-[13px] text-gray-400">No activity recorded yet.</p>
+          ) : (
+            <div className="flex flex-col">
+              {logs.map((entry) => (
+                <div key={entry.id} className="flex items-start gap-[16px] border-b border-gray-100 py-[10px]">
+                  <p className="text-[11px] text-gray-400 font-[Roboto_Mono] whitespace-nowrap shrink-0 w-[160px]">
+                    {new Date(entry.createdAt).toLocaleString('en-GB')}
+                  </p>
+                  <p className="text-[13px] text-black">{entry.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
+
+      {activeTab === 'documents' && (
+      <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex-1 px-[10px] pt-[20px] pb-[15px]">
+          <div className="flex items-center justify-between mb-[16px]">
+            <h2 className="text-[#003160] text-[15px] font-bold uppercase">Documents</h2>
+            <label className="flex items-center gap-[6px] px-[12px] py-[6px] bg-[#446BF9] text-white text-[12px] font-semibold rounded-[2px] cursor-pointer hover:bg-[#3557d9] transition-colors">
+              <Upload className="w-[14px] h-[14px]" />
+              {documentUploading ? 'Uploading…' : 'Upload document'}
+              <input
+                type="file"
+                className="hidden"
+                disabled={documentUploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadDocument(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+          </div>
+
+          {documentError && (
+            <p className="text-[12px] text-[#D0021B] mb-[12px]">{documentError}</p>
+          )}
+
+          {documentsLoading ? (
+            <p className="text-[13px] text-gray-400">Loading…</p>
+          ) : documents.length === 0 ? (
+            <p className="text-[13px] text-gray-400">No documents uploaded yet.</p>
+          ) : (
+            <div className="flex flex-col gap-[8px]">
+              {documents.map((doc) => (
+                <div key={doc.path} className="flex items-center justify-between border border-gray-200 rounded-[4px] px-[12px] py-[10px]">
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[#446BF9] text-[13px] hover:underline truncate flex items-center gap-[8px]"
+                  >
+                    <FileText className="w-[14px] h-[14px] shrink-0" />
+                    {doc.name}
+                  </a>
+                  <div className="flex items-center gap-[16px] shrink-0">
+                    <span className="text-[11px] text-gray-400 font-[Roboto_Mono]">{(doc.size / 1024).toFixed(1)} KB</span>
+                    <button
+                      onClick={() => handleDeleteDocument(doc.path)}
+                      className="cursor-pointer hover:opacity-70 transition-opacity"
+                      title="Delete document"
+                    >
+                      <Trash2 className="w-[14px] h-[14px] text-gray-400 hover:text-[#D0021B]" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       )}
       </div>

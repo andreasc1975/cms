@@ -16,6 +16,7 @@ import { ColumnVisibilityModal, type ColumnVisibility } from './components/Colum
 import type { TableRowData } from './components/TableRow';
 import { migrateRecords } from './components/TableRow';
 import { fetchDeclarations, createDeclaration, updateDeclaration, deleteDeclaration } from './lib/declarationsApi';
+import { addLog } from './lib/logsApi';
 
 export interface FilterTemplate {
   id: string;
@@ -873,6 +874,9 @@ function App() {
         // resolved, they're currently looking at the temp id — swap it to
         // the real one so DetailView doesn't suddenly stop finding its record.
         setSelectedRecordId((current) => (current === tempId ? saved.id : current));
+        addLog(saved.id, 'created', 'Declaration created').catch((err) => {
+          console.error('Error writing log entry:', err);
+        });
       })
       .catch((err) => {
         console.error('Error creating declaration in Supabase:', err);
@@ -1004,6 +1008,9 @@ function App() {
     updateDeclaration(id, assignment).catch((err) => {
       console.error('Error updating declaration in Supabase:', err);
     });
+    addLog(id, 'updated', 'Declaration updated').catch((err) => {
+      console.error('Error writing log entry:', err);
+    });
     return assignment.customsNo;
   }, []);
 
@@ -1016,6 +1023,13 @@ function App() {
     ));
     updateDeclaration(id, updates).catch((err) => {
       console.error('Error patching declaration in Supabase:', err);
+    });
+    // Generic log entry — the Freight/Invoices panel patches specific fields
+    // (invoice removed, freight cleared) without telling this handler which,
+    // so this stays a general note rather than a precise per-field message.
+    const changedFields = Object.keys(updates).filter((k) => k !== 'invoices').join(', ') || 'invoices';
+    addLog(id, 'updated', `Declaration fields updated (${changedFields})`).catch((err) => {
+      console.error('Error writing log entry:', err);
     });
   }, []);
   
