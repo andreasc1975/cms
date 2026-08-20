@@ -677,6 +677,11 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   verifiedOptions={verifiedCompanies}
                   onVerifiedClick={handleVerifiedClick}
                   enableApiSearch={true}
+                  onManualAdd={() => {
+                    setPendingBrregCompany(null);
+                    setPendingBrregTarget('consignor');
+                    setShowCreateOrgModal(true);
+                  }}
                   onApiResultSelect={(company: BrregCompany) => {
                     console.log('Consignor onApiResultSelect triggered with:', company);
                     const address = company.forretningsadresse || company.postadresse;
@@ -776,6 +781,11 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                   verifiedOptions={verifiedCompanies}
                   onVerifiedClick={handleVerifiedClick}
                   enableApiSearch={true}
+                  onManualAdd={() => {
+                    setPendingBrregCompany(null);
+                    setPendingBrregTarget('consignee');
+                    setShowCreateOrgModal(true);
+                  }}
                   onApiResultSelect={(company: BrregCompany) => {
                     const address = company.forretningsadresse || company.postadresse;
                     const addressLine = address?.adresse?.join(', ') || '';
@@ -1125,7 +1135,11 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
           const newCompany: CompanyData = {
             name: organizationData.organizationName,
             address: organizationData.address,
-            verified: true, // Mark as verified since it came from Brreg
+            // Only mark "verified" (Brønnøysundregistrene checkmark) when
+            // this actually came from a Brreg lookup — manually-added
+            // organizations (e.g. via "Add new organization manually", for
+            // foreign companies Brreg wouldn't have) aren't verified there.
+            verified: !!pendingBrregCompany,
             orgName: organizationData.organizationName,
             orgNo: organizationData.organizationNumber,
             city: organizationData.city,
@@ -1155,7 +1169,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
             emailAddress: '',
             associatedCustomer: '',
             orgNo: newCompany.orgNo || '',
-            verified: true
+            verified: newCompany.verified || false
           }).catch((err) => console.error('Error saving new address to Supabase:', err));
           
           // Fill in whichever field (Consignor or Consignee) actually

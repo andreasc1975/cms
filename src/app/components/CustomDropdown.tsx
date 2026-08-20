@@ -22,6 +22,7 @@ interface CustomDropdownProps {
   enableApiSearch?: boolean; // Enable Brreg API search
   onApiResultSelect?: (result: BrregCompany) => void; // Callback when API result is selected
   onAddToDatabase?: (company: BrregCompany) => void; // Callback to add company to database
+  onManualAdd?: () => void; // Opens a blank "Create Organization" form — for companies not found via Brreg (e.g. foreign ones)
 }
 
 // Brreg API response types
@@ -75,7 +76,8 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
   onVerifiedClick,
   enableApiSearch = false,
   onApiResultSelect,
-  onAddToDatabase
+  onAddToDatabase,
+  onManualAdd
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(value || defaultValue || '');
@@ -598,6 +600,22 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
                 </div>
               )}
             </div>
+            {enableApiSearch && onManualAdd && (
+              <button
+                type="button"
+                onClick={() => {
+                  onManualAdd();
+                  setIsOpen(false);
+                  setSearchQuery('');
+                  setIsSearching(false);
+                  setApiResults([]);
+                }}
+                className="w-full flex items-center gap-2 px-[10px] py-[8px] font-[Inter] text-[12px] text-[#446BF9] font-semibold cursor-pointer border-0 border-t border-t-[#e0e0e0] bg-white hover:bg-[#f5f5f5] transition-colors"
+              >
+                <Plus className="w-[14px] h-[14px]" />
+                Add new organization manually
+              </button>
+            )}
           </div>
         )}
       </div>
