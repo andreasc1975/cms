@@ -270,6 +270,10 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   const [selectedOrgData, setSelectedOrgData] = useState<CompanyData | null>(null);
   const [showCreateOrgModal, setShowCreateOrgModal] = useState(false);
   const [pendingBrregCompany, setPendingBrregCompany] = useState<BrregCompany | null>(null);
+  // Which field triggered the Brreg selection — the Create Organization
+  // confirmation modal needs this to know whether to fill Consignor or
+  // Consignee once the user confirms, instead of always assuming Consignor.
+  const [pendingBrregTarget, setPendingBrregTarget] = useState<'consignor' | 'consignee' | null>(null);
 
   const originalFormDataRef = useRef(formData);
   const originalInvoicesRef = useRef(invoices);
@@ -690,6 +694,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     // Open modal to save to database
                     console.log('Setting pending company and opening modal...');
                     setPendingBrregCompany(company);
+                    setPendingBrregTarget('consignor');
                     setShowCreateOrgModal(true);
                     console.log('Modal should now be shown');
                   }}
@@ -786,6 +791,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     
                     // Open modal to save to database
                     setPendingBrregCompany(company);
+                    setPendingBrregTarget('consignee');
                     setShowCreateOrgModal(true);
                   }}
                 />
@@ -864,14 +870,21 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 </span>
               </div>
             )}
-            {!autoClassification && formData.consignorName && formData.consigneeName && (
-              <div className="w-full flex items-center gap-[8px] -mt-[8px]">
-                <TriangleAlert className="w-[14px] h-[14px] text-[#D0021B] shrink-0" />
-                <span className="text-[11px] text-[#D0021B] font-['Inter']">
-                  Can't determine Import/Export/EU — one side of the shipment must be in Norway.
-                </span>
-              </div>
-            )}
+            {!autoClassification && formData.consignorName && formData.consigneeName && (() => {
+              const consignorCountry = getCompanyCountry(companies, formData.consignorName);
+              const consigneeCountry = getCompanyCountry(companies, formData.consigneeName);
+              const bothNorway = consignorCountry === 'Norway' && consigneeCountry === 'Norway';
+              return (
+                <div className="w-full flex items-center gap-[8px] -mt-[8px]">
+                  <TriangleAlert className="w-[14px] h-[14px] text-[#D0021B] shrink-0" />
+                  <span className="text-[11px] text-[#D0021B] font-['Inter']">
+                    {bothNorway
+                      ? "Can't determine Import/Export/EU — Consignor and Consignee are both in Norway, this looks like a domestic shipment, not a customs declaration."
+                      : "Can't determine Import/Export/EU — exactly one side (Consignor or Consignee) must be in Norway."}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Invoice/s Section with Custom Table */}
             <InvoiceTable
@@ -1100,6 +1113,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         onClose={() => {
           setShowCreateOrgModal(false);
           setPendingBrregCompany(null);
+          setPendingBrregTarget(null);
         }}
         prefillData={pendingBrregCompany}
         onSave={(organizationData: OrganizationFormData) => {
@@ -1139,15 +1153,26 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
             verified: true
           }).catch((err) => console.error('Error saving new address to Supabase:', err));
           
-          // Also select this company in the form
-          setFormData({
-            ...formData,
-            consignorName: newCompany.name,
-            consignorAddress: `${organizationData.address}, ${organizationData.postCode} ${organizationData.city}`
-          });
+          // Fill in whichever field (Consignor or Consignee) actually
+          // triggered this Brreg selection — not always Consignor.
+          const fullAddress = `${organizationData.address}, ${organizationData.postCode} ${organizationData.city}`;
+          if (pendingBrregTarget === 'consignee') {
+            setFormData({
+              ...formData,
+              consigneeName: newCompany.name,
+              consigneeAddress: fullAddress
+            });
+          } else {
+            setFormData({
+              ...formData,
+              consignorName: newCompany.name,
+              consignorAddress: fullAddress
+            });
+          }
           
           setShowCreateOrgModal(false);
           setPendingBrregCompany(null);
+          setPendingBrregTarget(null);
         }}
       />
     </div>
