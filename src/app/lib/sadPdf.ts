@@ -92,5 +92,10 @@ export async function generateSadPdf(
   draw(record.value || '0.00', 471, 210, 8);
 
   const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+  // pdf-lib's .save() returns a Uint8Array typed against the broader
+  // ArrayBufferLike, which newer TS DOM typings don't consider assignable
+  // to Blob's expected BlobPart — wrapping it in a fresh Uint8Array (backed
+  // by a real, non-shared ArrayBuffer) satisfies the stricter type with no
+  // change in behavior.
+  return new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' });
 }
