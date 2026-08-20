@@ -27,7 +27,11 @@ export async function generateSadPdf(
   items: ItemLineRowForPdf[]
 ): Promise<Blob> {
   const templateBytes = await fetch('/rd-0019-template.pdf').then((res) => res.arrayBuffer());
-  const pdfDoc = await PDFDocument.load(templateBytes);
+  // The official Tolletaten template is encryption-protected against editing
+  // (owner password only, no real user password) — ignoreEncryption lets
+  // pdf-lib load and draw on it anyway; the file it saves back out is a
+  // fresh, unencrypted copy, so the preview opens without issue.
+  const pdfDoc = await PDFDocument.load(templateBytes, { ignoreEncryption: true });
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const page = pdfDoc.getPage(0);
   const { height } = page.getSize();
