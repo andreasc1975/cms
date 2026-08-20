@@ -267,7 +267,7 @@ export function CreateOrganizationModal({ isOpen, onClose, onSave, prefillData }
               <div className="grid grid-cols-2 gap-[16px] mt-[16px]">
                 <FormSelect
                   label="COUNTRY CODE"
-                  value={formData.countryCode}
+                  value={COUNTRY_CODES.find(c => c.value === formData.countryCode)?.label || 'NO | Norway'}
                   options={COUNTRY_CODES.map(c => c.label)}
                   onChange={(value) => {
                     const countryCode = COUNTRY_CODES.find(c => c.label === value);
