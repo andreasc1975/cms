@@ -35,6 +35,7 @@ export interface GenericTableConfig<T = any> {
   enableSorting?: boolean;
   enableTabNavigation?: boolean;
   rowHeight?: string;
+  readOnly?: boolean; // Locks every cell — used once a declaration has been sent
 }
 
 interface GenericEditableTableProps<T = any> extends GenericTableConfig<T> {
@@ -229,6 +230,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
   enableSorting = true,
   enableTabNavigation = true,
   rowHeight = '36px',
+  readOnly = false,
   className = '',
 }: GenericEditableTableProps<T>) {
   // State - REMOVE internal rows state, use data prop directly
@@ -852,7 +854,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div className={`flex flex-col h-full ${className} ${readOnly ? 'opacity-60 pointer-events-none' : ''}`}>
       <div 
         className="overflow-auto h-fit pb-[10px]"
         onClick={(e) => {

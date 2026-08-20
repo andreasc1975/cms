@@ -1,5 +1,5 @@
 interface StatusBadgeProps {
-  status: 'C' | 'PO' | 'O';
+  status: 'C' | 'PO' | 'O' | 'SENT';
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
@@ -7,17 +7,26 @@ export function StatusBadge({ status }: StatusBadgeProps) {
     'C': {
       bg: 'bg-[#52b89c]',
       label: 'C',
-      title: 'Cleared'
+      title: 'Cleared',
+      width: 'w-[20px]'
     },
     'PO': {
       bg: 'bg-[#ff8f00]', 
       label: 'PO',
-      title: 'Partly Open'
+      title: 'Partly Open',
+      width: 'w-[20px]'
     },
     'O': {
       bg: 'bg-[#446bf9]',
       label: 'O', 
-      title: 'Open'
+      title: 'Open',
+      width: 'w-[20px]'
+    },
+    'SENT': {
+      bg: 'bg-[#0058ac]',
+      label: 'SENT',
+      title: 'Sent to customs',
+      width: 'w-[34px]'
     }
   };
 
@@ -25,7 +34,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   return (
     <div 
-      className={`${config.bg} content-stretch flex gap-[10px] h-[16px] items-center justify-center relative rounded-[1px] shrink-0 w-[20px]`}
+      className={`${config.bg} ${config.width} content-stretch flex gap-[10px] h-[16px] items-center justify-center relative rounded-[1px] shrink-0`}
       title={config.title}
     >
       <div className="flex flex-col font-['Inter'] justify-center leading-[0] not-italic overflow-ellipsis overflow-hidden relative shrink-0 text-[12px] text-center text-nowrap text-white uppercase font-semibold">

@@ -24,6 +24,7 @@ interface CustomDropdownProps {
   onApiResultSelect?: (result: BrregCompany) => void; // Callback when API result is selected
   onAddToDatabase?: (company: BrregCompany) => void; // Callback to add company to database
   onManualAdd?: () => void; // Opens a blank "Create Organization" form — for companies not found via Brreg (e.g. foreign ones)
+  disabled?: boolean; // Fully locks the field — used once a declaration has been sent
 }
 
 // Brreg API response types
@@ -78,7 +79,8 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
   enableApiSearch = false,
   onApiResultSelect,
   onAddToDatabase,
-  onManualAdd
+  onManualAdd,
+  disabled = false
 }, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(value || defaultValue || '');
@@ -471,11 +473,8 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
   // Standard form field version
   return (
     <div 
-      className="relative h-[54px] w-full" 
+      className={`relative h-[54px] w-full ${disabled ? 'opacity-50' : ''}`} 
       ref={dropdownRef}
-      onMouseDown={(e) => {
-        console.log('CustomDropdown CONTAINER mousedown!', e.target, e.currentTarget);
-      }}
     >
       <div className="absolute left-0 top-0 content-stretch flex items-start justify-between w-full pointer-events-none">
         <div className="content-stretch flex font-['Calibre:SemiBold',sans-serif] gap-[5px] items-center leading-[0] not-italic text-[12px] text-nowrap tracking-[0.7px] uppercase">
@@ -503,14 +502,15 @@ export const CustomDropdown = forwardRef<CustomDropdownRef, CustomDropdownProps>
           onFocus={handleInputFocus}
           tabIndex={tabIndex}
           placeholder={placeholder}
-          className={`relative z-10 w-full h-full pl-[10px] ${selectedValue && !isSearching ? 'pr-[76px]' : 'pr-[46px]'} bg-transparent border-none appearance-none cursor-text font-[Inter] text-[12px] text-left outline-none ${
+          disabled={disabled}
+          className={`relative z-10 w-full h-full pl-[10px] ${selectedValue && !isSearching ? 'pr-[76px]' : 'pr-[46px]'} bg-transparent border-none appearance-none ${disabled ? 'cursor-not-allowed' : 'cursor-text'} font-[Inter] text-[12px] text-left outline-none ${
             (selectedValue && !isSearching) ? 'text-black' : 'text-[#999]'
           } ${className}`}
           autoFocus={autoFocus}
         />
         
         {/* Clear button - only shown when there's a value */}
-        {selectedValue && !isSearching && (
+        {selectedValue && !isSearching && !disabled && (
           <button
             type="button"
             onClick={handleClear}

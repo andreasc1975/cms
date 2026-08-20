@@ -26,6 +26,7 @@ interface TopBarProps {
     status?: 'C' | 'PO' | 'O';
     customsNo?: string;
     sendDate?: string;
+    stage?: string;
     importExport?: string;
     managedBy?: string;
     customsClearanceUnit?: string;
@@ -243,7 +244,7 @@ export function TopBar({
 
         {/* Action Icons */}
         <div className="content-stretch flex gap-[15px] items-center justify-end relative shrink-0">
-          {showBackButton && onEditClick && (
+          {showBackButton && onEditClick && detailData?.stage !== 'sent' && (
             <button
               onClick={onEditClick}
               className="relative shrink-0 size-[24px] transition-all duration-150 hover:scale-105 hover:opacity-80 cursor-pointer"
@@ -341,7 +342,7 @@ export function TopBar({
             {/* Metadata box: declaration/sequence/version/managed by/dates on row 1,
                 receipt/type/department/control no/message type on row 2 */}
             <div className="bg-neutral-100 box-border content-stretch p-[10px] relative rounded-[2px] shrink-0 w-full">
-              {onEditClick && (
+              {onEditClick && detailData?.stage !== 'sent' && (
                 <button
                   onClick={onEditClick}
                   className="absolute top-[8px] right-[8px] cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded z-10"
@@ -352,7 +353,7 @@ export function TopBar({
               )}
               <div className="grid grid-cols-[64px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(70px,0.7fr)_minmax(140px,1.2fr)_minmax(90px,1fr)_minmax(90px,1fr)] gap-x-[16px] gap-y-[10px] items-start">
                 <div className="row-span-2 pt-[2px] flex items-center gap-[6px]" data-name="Status">
-                  {detailData?.status ? <StatusBadge status={detailData.status} /> : <div className="bg-[#9e9e9e] h-[16px] w-[20px] rounded-[1px]" />}
+                  {detailData?.status ? <StatusBadge status={detailData.stage === 'sent' ? 'SENT' : detailData.status} /> : <div className="bg-[#9e9e9e] h-[16px] w-[20px] rounded-[1px]" />}
                   <div
                     className="bg-[#003160] content-stretch flex items-center justify-center h-[16px] px-[4px] rounded-[1px] shrink-0"
                     title={detailData?.importExport === 'IM' ? 'Import' : detailData?.importExport === 'EU' ? 'EU trade' : 'Export'}
@@ -477,14 +478,16 @@ export function TopBar({
                 </p>
               </div>
 
-              {/* Validate and Send */}
-              <button
-                onClick={onValidateAndSend}
-                className="bg-gradient-to-t from-[#0058ac] to-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
-                data-name="Button/Validate and Send"
-              >
-                <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-white whitespace-nowrap">Validate and Send</span>
-              </button>
+              {/* Validate and Send — hidden once the declaration has been sent, there's nothing left to send */}
+              {detailData?.stage !== 'sent' && (
+                <button
+                  onClick={onValidateAndSend}
+                  className="bg-gradient-to-t from-[#0058ac] to-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
+                  data-name="Button/Validate and Send"
+                >
+                  <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-white whitespace-nowrap">Validate and Send</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

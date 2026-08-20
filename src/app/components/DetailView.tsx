@@ -953,6 +953,11 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     return { ...g, filled, total: g.requiredKeys.length, complete: filled === g.requiredKeys.length };
   }), [groupDefs, formData]);
 
+  // Once a declaration has been sent, nothing about it can be edited anymore
+  // — every field in Details, the Items table, the Freight/Invoices panel's
+  // actions, and the pencil-edit entry points all lock.
+  const isSent = record.stage === 'sent';
+
   return (
     <>
       {/* "Sending to Customs" overlay — shown while validateAndSend runs */}
@@ -1053,7 +1058,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                   <div className="flex items-center justify-between mb-[8px]">
                     <h3 className="text-[#003160] text-[13px] font-bold uppercase">Fraktkostnader</h3>
                     <div className="flex items-center gap-[6px] shrink-0">
-                      {onEditClick && (
+                      {onEditClick && !isSent && (
                         <button
                           onClick={onEditClick}
                           className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
@@ -1062,7 +1067,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                           <Pencil className="size-[13px] text-[#003160]" strokeWidth={2} />
                         </button>
                       )}
-                      {!!record.freightAndCosts && (
+                      {!!record.freightAndCosts && !isSent && (
                         <button
                           onClick={() => onUpdateRecord?.({ freightAndCosts: '' })}
                           className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
@@ -1080,7 +1085,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                 <div className="border border-gray-200 rounded-[6px] p-[12px] mb-[16px]">
                   <div className="flex items-center justify-between mb-[8px]">
                     <h3 className="text-[#003160] text-[13px] font-bold uppercase">Registrerade fakturor</h3>
-                    {onEditClick && (
+                    {onEditClick && !isSent && (
                       <button
                         onClick={onEditClick}
                         className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded shrink-0"
@@ -1098,16 +1103,18 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                   <div className="flex flex-col gap-[8px]">
                     {(record.invoices || []).map((invoice) => (
                       <div key={invoice.id} className="border border-gray-100 rounded-[4px] p-[8px] relative">
-                        <button
-                          onClick={() => {
-                            const updatedInvoices = (record.invoices || []).filter((i) => i.id !== invoice.id);
-                            onUpdateRecord?.(recomputeInvoiceAggregates(updatedInvoices));
-                          }}
-                          className="absolute top-[6px] right-[6px] cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
-                          title="Remove invoice"
-                        >
-                          <X className="size-[12px] text-gray-400" strokeWidth={2} />
-                        </button>
+                        {!isSent && (
+                          <button
+                            onClick={() => {
+                              const updatedInvoices = (record.invoices || []).filter((i) => i.id !== invoice.id);
+                              onUpdateRecord?.(recomputeInvoiceAggregates(updatedInvoices));
+                            }}
+                            className="absolute top-[6px] right-[6px] cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
+                            title="Remove invoice"
+                          >
+                            <X className="size-[12px] text-gray-400" strokeWidth={2} />
+                          </button>
+                        )}
                         <p className="text-[11px] font-semibold text-black pr-[16px] truncate">{invoice.invoiceNo || 'No number'}</p>
                         <p className="text-[10px] text-gray-500 mb-[4px]">{invoice.invoiceDate || '—'}</p>
                         <div className="grid grid-cols-2 gap-x-[8px] gap-y-[2px] text-[10px]">
@@ -1134,7 +1141,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                 <div className="border border-gray-200 rounded-[6px] p-[16px] mb-[16px]">
                   <div className="mb-[12px] flex items-center justify-between">
                     <h3 className="text-[#003160] text-[15px] font-bold uppercase">Parties</h3>
-                    {onEditClick && (
+                    {onEditClick && !isSent && (
                       <button
                         onClick={onEditClick}
                         className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
@@ -1227,6 +1234,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={['DailySettlement', 'Other']}
                         onChange={(value) => updateFormField('controlNo', value)}
                         tabIndex={1}
+                        disabled={isSent}
                         ref={controlNoRef}
                       />
                       <FormInput
@@ -1235,6 +1243,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         value={formData.controlNoExtra}
                         onChange={(value) => updateFormField('controlNoExtra', value)}
                         tabIndex={2}
+                        readOnly={isSent}
                       />
                     </div>
                     <div className="flex gap-[8px]">
@@ -1247,6 +1256,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         onBlur={() => handleFieldBlur('declarationType')}
                         isProposed={proposedFields.has('declarationType')}
                         tabIndex={3}
+                        disabled={isSent}
                       />
                       <CustomDropdown
                         label=""
@@ -1255,6 +1265,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={['t-Regular export', 'Other type']}
                         onChange={(value) => updateFormField('exportType', value)}
                         tabIndex={4}
+                        disabled={isSent}
                       />
                     </div>
                     <div>
@@ -1267,6 +1278,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         onBlur={() => handleFieldBlur('declarationStatus')}
                         isProposed={proposedFields.has('declarationStatus')}
                         tabIndex={5}
+                        disabled={isSent}
                       />
                     </div>
                     <div>
@@ -1279,6 +1291,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         onBlur={() => handleFieldBlur('transactionType')}
                         isProposed={proposedFields.has('transactionType')}
                         tabIndex={6}
+                        disabled={isSent}
                       />
                     </div>
                   </div>
@@ -1299,6 +1312,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       value={formData.referenceNo}
                       onChange={(value) => updateFormField('referenceNo', value)}
                       tabIndex={7}
+                      readOnly={isSent}
                     />
                     <FormInput
                       label="Internal Reference"
@@ -1308,6 +1322,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       onBlur={() => handleFieldBlur('internalReference')}
                       isProposed={proposedFields.has('internalReference')}
                       tabIndex={8}
+                      readOnly={isSent}
                     />
                     <div>
                       <CustomDropdown
@@ -1317,6 +1332,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={['No', 'Yes']}
                         onChange={(value) => updateFormField('container', value)}
                         tabIndex={9}
+                        disabled={isSent}
                       />
                     </div>
                     <FormInput
@@ -1325,6 +1341,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       value={formData.goodsPositionNo}
                       onChange={(value) => updateFormField('goodsPositionNo', value)}
                       tabIndex={10}
+                      readOnly={isSent}
                     />
                     <FormInput
                       label="No of Parcels"
@@ -1332,6 +1349,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       value={formData.noOfParcels}
                       onChange={(value) => updateFormField('noOfParcels', value)}
                       tabIndex={11}
+                      readOnly={isSent}
                     />
                   </div>
                 </div>
@@ -1352,6 +1370,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       options={COUNTRIES}
                       onChange={(value) => updateFormField('countryDispatch', value)}
                       tabIndex={12}
+                      disabled={isSent}
                     />
                     <CustomDropdown
                       label="Country of Destination"
@@ -1362,6 +1381,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       onBlur={() => handleFieldBlur('countryDestination')}
                       isProposed={proposedFields.has('countryDestination')}
                       tabIndex={13}
+                      disabled={isSent}
                     />
                     <div className="flex gap-[8px]">
                       <CustomDropdown
@@ -1371,6 +1391,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={['FCA', 'FOB', 'CIF', 'EXW', 'DDP']}
                         onChange={(value) => updateFormField('deliveryTerms', value)}
                         tabIndex={14}
+                        disabled={isSent}
                       />
                       <FormInput
                         label="Delivery Place"
@@ -1378,6 +1399,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         value={formData.deliveryPlace}
                         onChange={(value) => updateFormField('deliveryPlace', value)}
                         tabIndex={15}
+                        readOnly={isSent}
                       />
                     </div>
                     <div className="flex gap-[8px]">
@@ -1388,6 +1410,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={COUNTRIES}
                         onChange={(value) => updateFormField('nationality', value)}
                         tabIndex={16}
+                        disabled={isSent}
                       />
                       <FormInput
                         label=""
@@ -1395,6 +1418,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         value={formData.identityTransport}
                         onChange={(value) => updateFormField('identityTransport', value)}
                         tabIndex={17}
+                        readOnly={isSent}
                       />
                     </div>
                     <CustomDropdown
@@ -1404,6 +1428,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       options={['0101 - Oslo - Tast', '0102 - Bergen', '0103 - Stavanger']}
                       onChange={(value) => updateFormField('customsOffice', value)}
                       tabIndex={18}
+                      disabled={isSent}
                     />
                     <CustomDropdown
                       label="Mode of Transport at the Border"
@@ -1412,6 +1437,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       options={['Mode of Transport At the Border', '2-Rail', '3-Road', '4-Air', '5-Sea']}
                       onChange={(value) => updateFormField('transportMode', value)}
                       tabIndex={19}
+                      disabled={isSent}
                     />
                     <CustomDropdown
                       label="Location of Goods"
@@ -1422,6 +1448,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       onBlur={() => handleFieldBlur('locationGoods')}
                       isProposed={proposedFields.has('locationGoods')}
                       tabIndex={20}
+                      disabled={isSent}
                     />
                   </div>
                 </div>
@@ -1470,6 +1497,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
           enableTabNavigation={true}
           rowHeight="40px"
           onDataChange={handleDataChange}
+          readOnly={isSent}
         />
       </div>
       </div>

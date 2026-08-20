@@ -1138,6 +1138,7 @@ function App() {
             status: record.status,
             customsNo: record.customsNo,
             sendDate: record.sentDate,
+            stage: record.stage,
             importExport: record.declarationType || (record.typeBadge === 'E' ? 'EX' : 'IM'),
             messageDeclarationType: record.messageDeclarationType,
             managedBy: record.managedBy || 'Not assigned',

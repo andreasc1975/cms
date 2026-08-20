@@ -555,6 +555,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     !formData.consignorName ||
     !formData.consigneeName ||
     !autoClassification ||
+    editingRecord?.stage === 'sent' ||
     !invoices.some(inv => inv.totalAmount && parseNumber(inv.totalAmount) > 0);
 
   return (
@@ -600,6 +601,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
           </div>
           {/* Divider */}
           <div className="h-[1px] bg-gray-200 w-full mt-[24px]"></div>
+
+          {/* Locked notice — shown if this modal is ever reached for an already-sent declaration */}
+          {editingRecord?.stage === 'sent' && (
+            <div className="flex items-center gap-[8px] bg-[#FDECEA] border border-[#F5C2C0] text-[#7A271A] text-[12px] px-[12px] py-[8px] rounded-[4px] mt-[16px]">
+              <TriangleAlert className="w-[14px] h-[14px] shrink-0" />
+              <span>This declaration has already been sent to customs and can no longer be edited.</span>
+            </div>
+          )}
         </div>
 
         {/* Scrollable Content */}
