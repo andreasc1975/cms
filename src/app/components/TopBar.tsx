@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Pencil, FileText } from 'lucide-react';
+import { Pencil, FileText, Info } from 'lucide-react';
 import svgPaths from "../imports/svg-b75trn6pxk";
 import { imgRectangle20 } from "../imports/svg-ljevl";
 import { AddAssignmentModal } from './AddAssignmentModal';
@@ -264,37 +264,54 @@ export function TopBar({
             </button>
           )}
 
-          <IconButton 
-            id="add"
-            path={svgPaths.p2fd7c000}
-            onClick={onAddClick}
-            buttonRef={addButtonRef}
-          />
-          
-          <IconButton 
-            id="generate"
-            path="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
-            onClick={onGenerateClick}
-          />
-          
-          <button
-            onClick={onDeleteSelected}
-            disabled={!hasSelection}
-            className={`relative shrink-0 size-[24px] transition-all duration-150 ${
-              hasSelection ? 'hover:scale-105 hover:opacity-80 cursor-pointer' : 'opacity-30 cursor-not-allowed'
-            }`}
-          >
-            <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
-              <g>
-                <mask height="24" maskUnits="userSpaceOnUse" style={{ maskType: "alpha" }} width="24" x="0" y="0">
-                  <rect fill="#D9D9D9" height="24" width="24" />
-                </mask>
-                <g mask="url(#mask0_delete)">
-                  <path d="M7 21q-.825 0-1.412-.587Q5 19.825 5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413Q17.825 21 17 21ZM17 6H7v13h10ZM9 17h2V8H9Zm4 0h2V8h-2Z" fill="white" />
-                </g>
-              </g>
-            </svg>
-          </button>
+          {showBackButton ? (
+            /* On a declaration: just the help link, per design — replaces
+               the add/generate/delete icons that only made sense in the
+               list view. The document-preview icon above stays. */
+            <a
+              href="https://www.toll.no/no/bedrift/import/deklarering-av-varer/hjelp-til-utfylling-av-innforseldeklarasjon"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative shrink-0 size-[24px] transition-all duration-150 hover:scale-105 hover:opacity-80 cursor-pointer"
+              title="Help filling in the import declaration (opens toll.no)"
+            >
+              <Info className="size-full" color="white" strokeWidth={2} />
+            </a>
+          ) : (
+            <>
+              <IconButton 
+                id="add"
+                path={svgPaths.p2fd7c000}
+                onClick={onAddClick}
+                buttonRef={addButtonRef}
+              />
+              
+              <IconButton 
+                id="generate"
+                path="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                onClick={onGenerateClick}
+              />
+              
+              <button
+                onClick={onDeleteSelected}
+                disabled={!hasSelection}
+                className={`relative shrink-0 size-[24px] transition-all duration-150 ${
+                  hasSelection ? 'hover:scale-105 hover:opacity-80 cursor-pointer' : 'opacity-30 cursor-not-allowed'
+                }`}
+              >
+                <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 24 24">
+                  <g>
+                    <mask height="24" maskUnits="userSpaceOnUse" style={{ maskType: "alpha" }} width="24" x="0" y="0">
+                      <rect fill="#D9D9D9" height="24" width="24" />
+                    </mask>
+                    <g mask="url(#mask0_delete)">
+                      <path d="M7 21q-.825 0-1.412-.587Q5 19.825 5 19V6H4V4h5V3h6v1h5v2h-1v13q0 .825-.587 1.413Q17.825 21 17 21ZM17 6H7v13h10ZM9 17h2V8H9Zm4 0h2V8h-2Z" fill="white" />
+                    </g>
+                  </g>
+                </svg>
+              </button>
+            </>
+          )}
           
           {/* Divider */}
           <div className="relative shrink-0 size-[24px]">
