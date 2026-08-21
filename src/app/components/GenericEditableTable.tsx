@@ -876,7 +876,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`flex flex-col h-full ${className} ${readOnly ? 'opacity-60 pointer-events-none' : ''}`}>
+    <div className={`flex flex-col h-full ${className} ${readOnly ? 'opacity-60' : ''}`}>
       <div 
         className="overflow-auto h-fit pb-[10px]"
         onClick={(e) => {
@@ -892,7 +892,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
           }
         }}
       >
-        <table className="w-full border-collapse">
+        <table className={`w-full border-collapse ${readOnly ? 'pointer-events-none' : ''}`}>
           <thead>
             {/* Orange number row */}
             <tr className="bg-white">
