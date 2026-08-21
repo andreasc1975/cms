@@ -1066,6 +1066,18 @@ function App() {
       console.error('Error writing log entry:', err);
     });
   }, [data]);
+
+  // Lightweight sibling to handlePatchRecord — just for keeping the main
+  // table's own copy of generalFormData in sync with what DetailView just
+  // saved to Supabase, so the completion ring updates live. Deliberately
+  // skips updateDeclaration (DetailView already persists this itself via
+  // saveGeneralFormData) and skips logging (this fires on every debounced
+  // keystroke — a log entry per save would spam the Log tab).
+  const handleGeneralFormDataChange = useCallback((id: string, generalFormData: Record<string, any>) => {
+    setData(prev => prev.map(row =>
+      row.id === id ? { ...row, generalFormData } : row
+    ));
+  }, []);
   
   // Sort state
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -1201,6 +1213,7 @@ function App() {
             headerHeight={topBarHeight}
             onEditClick={() => handleEditRow(selectedRecordId)}
             onUpdateRecord={(updates) => handlePatchRecord(selectedRecordId, updates)}
+            onGeneralFormDataChange={(generalFormData) => handleGeneralFormDataChange(selectedRecordId, generalFormData)}
             pdfPreviewOpen={pdfPreviewOpen}
             onClosePdfPreview={() => setPdfPreviewOpen(false)}
           />

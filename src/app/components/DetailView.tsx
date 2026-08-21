@@ -82,6 +82,11 @@ export interface DetailViewProps {
   onEditClick?: () => void;
   /** Patches specific fields on the record directly — used by the Freight/Invoices panel to remove an invoice or clear the freight cost without opening the full edit modal. */
   onUpdateRecord?: (updates: Partial<TableRowData>) => void;
+  /** Syncs the just-saved GENERAL form data into the main table's own copy
+   * of the record — without this, the completion ring in the list view
+   * keeps showing whatever it had at page load, since saving here only
+   * writes to Supabase, not to App.tsx's local `data` array. */
+  onGeneralFormDataChange?: (generalFormData: Record<string, any>) => void;
   /** Whether the document-preview side panel is open (state lives in App.tsx since the toggle icon sits in TopBar). */
   pdfPreviewOpen?: boolean;
   onClosePdfPreview?: () => void;
@@ -143,7 +148,7 @@ interface GeneralFormData {
   noOfParcels: string;
 }
 
-export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange, headerHeight = 0, onEditClick, onUpdateRecord, pdfPreviewOpen = false, onClosePdfPreview }, ref) {
+export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function DetailView({ record, onBack, sidebarWidth, onItemsSummaryChange, headerHeight = 0, onEditClick, onUpdateRecord, onGeneralFormDataChange, pdfPreviewOpen = false, onClosePdfPreview }, ref) {
   // Height of the fixed Details/Items tab bar rendered below the TopBar.
   const TAB_BAR_HEIGHT = 60;
 
@@ -330,6 +335,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
           saveGeneralFormData(record.id, seeded).catch((err) => {
             console.error('Error saving initial GENERAL form data to Supabase:', err);
           });
+          onGeneralFormDataChange?.(seeded);
           saveProposedFields(record.id, proposedKeys).catch((err) => {
             console.error('Error saving initial proposed fields to Supabase:', err);
           });
@@ -353,9 +359,13 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       saveGeneralFormData(record.id, formData).catch((err) => {
         console.error('Error saving GENERAL form data to Supabase:', err);
       });
+      // Also sync into App.tsx's own copy of the record — otherwise the
+      // main table's completion ring only ever reflects whatever it was at
+      // page load, since the save above only touches Supabase directly.
+      onGeneralFormDataChange?.(formData);
     }, 600);
     return () => clearTimeout(timeout);
-  }, [formData, record.id, hasUserChanges, formDataLoaded]);
+  }, [formData, record.id, hasUserChanges, formDataLoaded, onGeneralFormDataChange]);
 
   // Save proposed fields to Supabase whenever they change
   useEffect(() => {
