@@ -228,6 +228,14 @@ function formatRateDateRange(fromDate: string, toDate: string): string {
   return `${fromShort}\u2013${toDate}`;
 }
 
+// Combines a CompanyData entry's street address with its postcode/city, so
+// the Parties card in Details (which just displays this one string) always
+// shows the full address — not just the street line.
+function buildFullAddress(company: CompanyData | undefined): string {
+  if (!company) return '';
+  return [company.address, company.postcode, company.city].filter(Boolean).join(', ');
+}
+
 export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail, editingRecord, onUpdate }: AddAssignmentModalProps) {
   // Address book — loaded from Supabase (seeded once if empty) instead of a
   // hardcoded array, so it's shared and can grow over time.
@@ -740,7 +748,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     setFormData({ 
                       ...formData, 
                       consignorName: value,
-                      consignorAddress: company?.address || ''
+                      consignorAddress: buildFullAddress(company)
                     });
                   }}
                   placeholder="Search Norwegian companies..."
@@ -844,7 +852,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     setFormData({ 
                       ...formData, 
                       consigneeName: value,
-                      consigneeAddress: company?.address || ''
+                      consigneeAddress: buildFullAddress(company)
                     });
                   }}
                   placeholder="Search Norwegian companies..."
