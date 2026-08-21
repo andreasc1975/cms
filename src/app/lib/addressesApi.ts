@@ -130,3 +130,52 @@ export async function seedAddressesIfEmpty(): Promise<AddressEntry[]> {
   const created = await Promise.all(SEED_ADDRESSES.map((entry) => createAddress(entry)));
   return created;
 }
+
+/**
+ * Private individuals — 10 Norwegian, 10 foreign (mix of EU/non-EU) — so
+ * Consignor/Consignee can be a natural person, not just a company, while
+ * still exercising the EX/IM/EU classification. No org number (individuals
+ * don't have one) and never "verified" (Brreg only covers organizations).
+ */
+export const SEED_PRIVATE_INDIVIDUALS: Omit<AddressEntry, 'id'>[] = [
+  // Norwegian
+  { name: 'Kari Andersen', alias: '', associatedOrganization: '', address: 'Bygdøy Allé 14', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '0262', city: 'Oslo', state: 'Oslo', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Ole Hansen', alias: '', associatedOrganization: '', address: 'Nordre gate 8', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '7011', city: 'Trondheim', state: 'Trøndelag', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Anna Johansen', alias: '', associatedOrganization: '', address: 'Strandgaten 25', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '5004', city: 'Bergen', state: 'Vestland', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Lars Pettersen', alias: '', associatedOrganization: '', address: 'Kongens gate 3', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '4005', city: 'Stavanger', state: 'Rogaland', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Ingrid Larsen', alias: '', associatedOrganization: '', address: 'Storgata 45', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '9008', city: 'Tromsø', state: 'Troms', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Erik Nilsen', alias: '', associatedOrganization: '', address: 'Møllergata 12', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '1530', city: 'Moss', state: 'Viken', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Mari Kristiansen', alias: '', associatedOrganization: '', address: 'Dronningens gate 7', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '4610', city: 'Kristiansand', state: 'Agder', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Thomas Berg', alias: '', associatedOrganization: '', address: 'Torggata 20', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '2317', city: 'Hamar', state: 'Innlandet', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Silje Haugen', alias: '', associatedOrganization: '', address: 'Rådhusgata 5', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '6003', city: 'Ålesund', state: 'Møre og Romsdal', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Jonas Solberg', alias: '', associatedOrganization: '', address: 'Prinsens gate 33', address2: '', address3: '', countryCode: 'NO', country: 'Norway', postCode: '3044', city: 'Drammen', state: 'Viken', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+
+  // Foreign — EU
+  { name: 'Emma Schmidt', alias: '', associatedOrganization: '', address: 'Friedrichstraße 55', address2: '', address3: '', countryCode: 'DE', country: 'Germany', postCode: '10117', city: 'Berlin', state: 'Berlin', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Lucas Dubois', alias: '', associatedOrganization: '', address: 'Rue de Rivoli 12', address2: '', address3: '', countryCode: 'FR', country: 'France', postCode: '75001', city: 'Paris', state: 'Île-de-France', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Sofia Lindgren', alias: '', associatedOrganization: '', address: 'Kungsgatan 8', address2: '', address3: '', countryCode: 'SE', country: 'Sweden', postCode: '111 43', city: 'Stockholm', state: 'Stockholm', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Anders Nielsen', alias: '', associatedOrganization: '', address: 'Nørrebrogade 22', address2: '', address3: '', countryCode: 'DK', country: 'Denmark', postCode: '2200', city: 'Copenhagen', state: 'Capital Region', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Maria Rossi', alias: '', associatedOrganization: '', address: 'Via del Corso 45', address2: '', address3: '', countryCode: 'IT', country: 'Italy', postCode: '00186', city: 'Rome', state: 'Lazio', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+
+  // Foreign — non-EU
+  { name: 'James Wilson', alias: '', associatedOrganization: '', address: 'Baker Street 42', address2: '', address3: '', countryCode: 'GB', country: 'United Kingdom', postCode: 'NW1 6XE', city: 'London', state: 'England', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Sarah Johnson', alias: '', associatedOrganization: '', address: '5th Avenue 350', address2: '', address3: '', countryCode: 'US', country: 'United States', postCode: '10118', city: 'New York', state: 'New York', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Hans Zimmermann', alias: '', associatedOrganization: '', address: 'Bahnhofstrasse 10', address2: '', address3: '', countryCode: 'CH', country: 'Switzerland', postCode: '8001', city: 'Zurich', state: 'Zurich', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Yuki Tanaka', alias: '', associatedOrganization: '', address: 'Shibuya 2-1', address2: '', address3: '', countryCode: 'JP', country: 'Japan', postCode: '150-0002', city: 'Tokyo', state: 'Tokyo', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false },
+  { name: 'Wei Chen', alias: '', associatedOrganization: '', address: 'Nanjing Road 100', address2: '', address3: '', countryCode: 'CN', country: 'China', postCode: '200003', city: 'Shanghai', state: 'Shanghai', contactPerson: '', phoneNo: '', emailAddress: '', associatedCustomer: '', orgNo: '', verified: false }
+];
+
+/**
+ * One-time addition of the private individuals above to an ALREADY-seeded
+ * addresses table — seedAddressesIfEmpty only runs on a genuinely empty
+ * table, so it wouldn't add these to a database that already has company
+ * entries. Checks by name first so it's safe to call more than once.
+ */
+export async function addPrivateIndividualsIfMissing(): Promise<AddressEntry[]> {
+  const existing = await fetchAddresses();
+  const existingNames = new Set(existing.map((a) => a.name));
+  const missing = SEED_PRIVATE_INDIVIDUALS.filter((p) => !existingNames.has(p.name));
+  if (missing.length === 0) return existing;
+  const created = await Promise.all(missing.map((entry) => createAddress(entry)));
+  return [...existing, ...created];
+}

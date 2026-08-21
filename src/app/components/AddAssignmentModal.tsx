@@ -10,7 +10,7 @@ import { ConfirmationDialog } from './ConfirmationDialog';
 import { OrganizationDetailModal } from './OrganizationDetailModal';
 import { InvoiceTable, type InvoiceRow } from './InvoiceTable';
 import { CreateOrganizationModal, type OrganizationFormData, countryNameFromCode } from './CreateOrganizationModal';
-import { fetchAddresses, createAddress, seedAddressesIfEmpty, type AddressEntry } from '../lib/addressesApi';
+import { fetchAddresses, createAddress, seedAddressesIfEmpty, addPrivateIndividualsIfMissing, type AddressEntry } from '../lib/addressesApi';
 
 interface AddAssignmentModalProps {
   isOpen: boolean;
@@ -236,6 +236,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
   useEffect(() => {
     let cancelled = false;
     seedAddressesIfEmpty()
+      .then(() => addPrivateIndividualsIfMissing())
       .then((entries) => {
         if (!cancelled) setCompanies(entries.map(addressEntryToCompanyData));
       })
