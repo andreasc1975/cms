@@ -1310,6 +1310,26 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
           <div className="flex gap-[24px]">
               {/* Freight & Invoices panel — compact, left side */}
               <div className="w-[260px] shrink-0">
+                {/* Card: Currency Rate — the Norges Bank week the invoice's rate came from */}
+                <div className="border border-gray-200 rounded-[6px] p-[12px] mb-[16px]">
+                  <div className="flex items-center justify-between mb-[8px]">
+                    <h3 className="text-[#003160] text-[13px] font-bold uppercase">Currency Rate</h3>
+                    {onEditClick && !isSent && (
+                      <button
+                        onClick={onEditClick}
+                        className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded shrink-0"
+                        title="Edit"
+                      >
+                        <Pencil className="size-[13px] text-[#003160]" strokeWidth={2} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-[12px] text-black font-[Roboto_Mono]">{record.currencyRate || '1'}</p>
+                    <p className="text-[11px] text-gray-400">{record.currencyRateDate || '—'}</p>
+                  </div>
+                </div>
+
                 {/* Card: Freight and Costs */}
                 <div className="border border-gray-200 rounded-[6px] p-[12px] mb-[16px]">
                   <div className="flex items-center justify-between mb-[8px]">
@@ -1336,26 +1356,6 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                     </div>
                   </div>
                   <p className="text-[12px] text-black font-[Roboto_Mono]">{record.freightAndCosts || '—'}</p>
-                </div>
-
-                {/* Card: Currency Rate — the Norges Bank week the invoice's rate came from */}
-                <div className="border border-gray-200 rounded-[6px] p-[12px] mb-[16px]">
-                  <div className="flex items-center justify-between mb-[8px]">
-                    <h3 className="text-[#003160] text-[13px] font-bold uppercase">Currency Rate</h3>
-                    {onEditClick && !isSent && (
-                      <button
-                        onClick={onEditClick}
-                        className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded shrink-0"
-                        title="Edit"
-                      >
-                        <Pencil className="size-[13px] text-[#003160]" strokeWidth={2} />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[12px] text-black font-[Roboto_Mono]">{record.currencyRate || '1'}</p>
-                    <p className="text-[11px] text-gray-400">{record.currencyRateDate || '—'}</p>
-                  </div>
                 </div>
 
                 {/* Card: Registered Invoices */}

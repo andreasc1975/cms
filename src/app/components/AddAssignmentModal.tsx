@@ -220,6 +220,14 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
   ]
 };
 
+// Shows the year only once ("17.08–23.08.2026" instead of
+// "17.08.2026–23.08.2026") — shorter, so it reliably fits on one line in
+// the Rate Date column regardless of exact column width.
+function formatRateDateRange(fromDate: string, toDate: string): string {
+  const fromShort = fromDate.slice(0, 5); // "DD.MM"
+  return `${fromShort}\u2013${toDate}`;
+}
+
 export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail, editingRecord, onUpdate }: AddAssignmentModalProps) {
   // Address book — loaded from Supabase (seeded once if empty) instead of a
   // hardcoded array, so it's shared and can grow over time.
@@ -403,7 +411,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     const current = periods.find((p) => p.isCurrent);
     if (current) {
       setCurrencyRate(current.rate.toString());
-      setRateDate(`${current.fromDate}\u2013${current.toDate}`);
+      setRateDate(formatRateDateRange(current.fromDate, current.toDate));
     }
   }, [invoices[0]?.currency, isOpen, editingRecord]);
 
@@ -979,10 +987,10 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     <tr className="border-b border-[#e5e5e5]">
                       <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[10%]">CURRENCY</th>
                       <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[8%]">RATE</th>
-                      <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">RATE DATE</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[11%]">TOTAL AMOUNT</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[16%]">FREIGHT AND COSTS IN NOK(-)</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[15%]">TOTAL STATISTICAL VALUE</th>
+                      <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[16%]">RATE DATE</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[10%]">TOTAL AMOUNT</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[13%]">FREIGHT AND COSTS IN NOK(-)</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[14%]">TOTAL STATISTICAL VALUE</th>
                       <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[11%]">TOTAL GROSS WEIGHT</th>
                       <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">TOTAL NET WEIGHT</th>
                       <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">TOTAL NO OF PARCELS</th>
@@ -1041,7 +1049,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                                         type="button"
                                         onClick={() => {
                                           setCurrencyRate(period.rate.toString());
-                                          setRateDate(`${period.fromDate}\u2013${period.toDate}`);
+                                          setRateDate(formatRateDateRange(period.fromDate, period.toDate));
                                           setRateDropdownOpen(false);
                                         }}
                                         className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[2px] hover:bg-[#DFE5EB] transition-colors cursor-pointer border-0 bg-transparent text-left"
@@ -1070,7 +1078,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                         </div>
                       </td>
                       <td className="px-2 py-1">
-                        <span className="font-['Inter'] text-[11px] text-gray-600">{rateDate || '—'}</span>
+                        <span className="font-['Inter'] text-[11px] text-gray-600 whitespace-nowrap">{rateDate || '—'}</span>
                       </td>
                       <td className="px-2 py-1">
                         <span className="font-[Roboto_Mono] text-[12px] text-[#000] tracking-[0] block text-right">{totals.totalAmount}</span>
