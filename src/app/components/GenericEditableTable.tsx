@@ -1120,7 +1120,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
                 return (
                   <td
                     key={`footer-${column.key}`}
-                    className={`px-2 py-2 font-['Roboto_Mono'] text-[12px] text-[#003160] font-bold whitespace-nowrap ${isNumeric ? 'text-right' : 'text-left'}`}
+                    className={`px-2 py-2 font-['Roboto_Mono'] text-[12px] text-black font-bold whitespace-nowrap ${isNumeric ? 'text-right' : 'text-left'}`}
                   >
                     {isNumeric
                       ? sum!.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
