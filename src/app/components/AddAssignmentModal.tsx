@@ -136,10 +136,16 @@ interface CurrencyRatePeriod {
   toDate: string;
   unit: number;
   rate: number;
+  /** This week's rate — auto-selected whenever the invoice currency changes. */
+  isCurrent?: boolean;
+  /** Next week's rate — shown in the dropdown alongside the historical ones. */
+  isNext?: boolean;
 }
 
 const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
   EUR: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 1, rate: 11.042, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 1, rate: 11.017, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 10.992 },
     { fromDate: '03.08.2026', toDate: '09.08.2026', unit: 1, rate: 10.965 },
     { fromDate: '27.07.2026', toDate: '02.08.2026', unit: 1, rate: 10.940 },
@@ -152,6 +158,8 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '08.06.2026', toDate: '14.06.2026', unit: 1, rate: 10.788 }
   ],
   USD: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 1, rate: 9.911, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 1, rate: 9.878, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 9.845 },
     { fromDate: '03.08.2026', toDate: '09.08.2026', unit: 1, rate: 9.812 },
     { fromDate: '27.07.2026', toDate: '02.08.2026', unit: 1, rate: 9.780 },
@@ -164,6 +172,8 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '08.06.2026', toDate: '14.06.2026', unit: 1, rate: 9.610 }
   ],
   GBP: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 1, rate: 12.794, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 1, rate: 12.764, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 12.734 },
     { fromDate: '03.08.2026', toDate: '09.08.2026', unit: 1, rate: 12.698 },
     { fromDate: '27.07.2026', toDate: '02.08.2026', unit: 1, rate: 12.671 },
@@ -176,6 +186,8 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '08.06.2026', toDate: '14.06.2026', unit: 1, rate: 12.505 }
   ],
   SEK: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 10, rate: 9.637, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 10, rate: 9.624, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 10, rate: 9.611 },
     { fromDate: '03.08.2026', toDate: '09.08.2026', unit: 10, rate: 9.598 },
     { fromDate: '27.07.2026', toDate: '02.08.2026', unit: 10, rate: 9.585 },
@@ -188,6 +200,8 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '08.06.2026', toDate: '14.06.2026', unit: 10, rate: 9.494 }
   ],
   DKK: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 1, rate: 1.480, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 1, rate: 1.477, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 1.474 },
     { fromDate: '03.08.2026', toDate: '09.08.2026', unit: 1, rate: 1.471 },
     { fromDate: '27.07.2026', toDate: '02.08.2026', unit: 1, rate: 1.468 },
@@ -200,6 +214,8 @@ const CURRENCY_RATE_HISTORY: Record<string, CurrencyRatePeriod[]> = {
     { fromDate: '08.06.2026', toDate: '14.06.2026', unit: 1, rate: 1.447 }
   ],
   NOK: [
+    { fromDate: '24.08.2026', toDate: '30.08.2026', unit: 1, rate: 1, isNext: true },
+    { fromDate: '17.08.2026', toDate: '23.08.2026', unit: 1, rate: 1, isCurrent: true },
     { fromDate: '10.08.2026', toDate: '16.08.2026', unit: 1, rate: 1 }
   ]
 };
@@ -261,6 +277,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
 
   const [freightAndCosts, setFreightAndCosts] = useState('');
   const [currencyRate, setCurrencyRate] = useState('1');
+  const [rateDate, setRateDate] = useState('');
   const [rateDropdownOpen, setRateDropdownOpen] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [openDatePickerId, setOpenDatePickerId] = useState<string | null>(null);
@@ -317,6 +334,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
       setInvoices(newInvoices);
       setFreightAndCosts(editingRecord.freightAndCosts || '');
       setCurrencyRate(editingRecord.currencyRate || '1');
+      setRateDate(editingRecord.currencyRateDate || '');
       
       // Update refs for change detection
       originalFormDataRef.current = newFormData;
@@ -357,10 +375,37 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
       originalInvoicesRef.current = defaultInvoices;
       originalFreightAndCostsRef.current = '';
       setCurrencyRate('1');
+      setRateDate('');
       originalCurrencyRateRef.current = '1';
       setHasChanges(false);
     }
   }, [editingRecord, isOpen]);
+
+  // Rate is dynamic — auto-picks this week's rate for whatever currency the
+  // invoice is set in. Skips this on the very first load of an EXISTING
+  // record (preserves whatever rate was actually saved), but applies
+  // whenever the currency is subsequently changed, including for new records.
+  const previousRateCurrencyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isOpen) {
+      previousRateCurrencyRef.current = null;
+      return;
+    }
+    const currency = invoices[0]?.currency || 'NOK';
+    const isFirstRun = previousRateCurrencyRef.current === null;
+    previousRateCurrencyRef.current = currency;
+
+    if (isFirstRun && editingRecord) {
+      return;
+    }
+
+    const periods = CURRENCY_RATE_HISTORY[currency] || [];
+    const current = periods.find((p) => p.isCurrent);
+    if (current) {
+      setCurrencyRate(current.rate.toString());
+      setRateDate(`${current.fromDate}\u2013${current.toDate}`);
+    }
+  }, [invoices[0]?.currency, isOpen, editingRecord]);
 
   // Detect changes
   useEffect(() => {
@@ -468,6 +513,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
       invoices: invoices,
       freightAndCosts: freightAndCosts,
       currencyRate: currencyRate,
+      currencyRateDate: rateDate,
       goodsNo: editingRecord?.goodsNo || '',
       sender: {
         name: formData.consignorName,
@@ -933,10 +979,11 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     <tr className="border-b border-[#e5e5e5]">
                       <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[10%]">CURRENCY</th>
                       <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[8%]">RATE</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[14%]">TOTAL AMOUNT</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[20%]">FREIGHT AND COSTS IN NOK(-)</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[18%]">TOTAL STATISTICAL VALUE</th>
-                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[14%]">TOTAL GROSS WEIGHT</th>
+                      <th className="px-2 py-2 text-left font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">RATE DATE</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[11%]">TOTAL AMOUNT</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[16%]">FREIGHT AND COSTS IN NOK(-)</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[15%]">TOTAL STATISTICAL VALUE</th>
+                      <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[11%]">TOTAL GROSS WEIGHT</th>
                       <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">TOTAL NET WEIGHT</th>
                       <th className="px-2 py-2 text-right font-['Inter'] text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] bg-white w-[12%]">TOTAL NO OF PARCELS</th>
                     </tr>
@@ -954,6 +1001,7 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                             onChange={(e) => {
                               const filtered = e.target.value.replace(/[^\d.]/g, '');
                               setCurrencyRate(filtered);
+                              setRateDate(''); // manual entry no longer corresponds to a known period
                             }}
                             onBlur={(e) => {
                               if (e.target.value.trim() === '') return;
@@ -993,12 +1041,21 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                                         type="button"
                                         onClick={() => {
                                           setCurrencyRate(period.rate.toString());
+                                          setRateDate(`${period.fromDate}\u2013${period.toDate}`);
                                           setRateDropdownOpen(false);
                                         }}
                                         className="w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-[2px] hover:bg-[#DFE5EB] transition-colors cursor-pointer border-0 bg-transparent text-left"
                                       >
-                                        <span className="font-['Inter'] text-[11px] text-gray-600 leading-tight break-words">
-                                          {period.fromDate}–{period.toDate}
+                                        <span className="flex flex-col">
+                                          <span className="font-['Inter'] text-[11px] text-gray-600 leading-tight break-words">
+                                            {period.fromDate}–{period.toDate}
+                                          </span>
+                                          {period.isCurrent && (
+                                            <span className="font-['Inter'] text-[9px] text-[#446BF9] font-semibold uppercase tracking-[0.5px]">This week</span>
+                                          )}
+                                          {period.isNext && (
+                                            <span className="font-['Inter'] text-[9px] text-[#52B89C] font-semibold uppercase tracking-[0.5px]">Next week</span>
+                                          )}
                                         </span>
                                         <span className="font-[Roboto_Mono] text-[12px] text-black font-semibold shrink-0">
                                           {period.rate.toFixed(3)}
@@ -1011,6 +1068,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                             </PopoverContent>
                           </Popover>
                         </div>
+                      </td>
+                      <td className="px-2 py-1">
+                        <span className="font-['Inter'] text-[11px] text-gray-600">{rateDate || '—'}</span>
                       </td>
                       <td className="px-2 py-1">
                         <span className="font-[Roboto_Mono] text-[12px] text-[#000] tracking-[0] block text-right">{totals.totalAmount}</span>

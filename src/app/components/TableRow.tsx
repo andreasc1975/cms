@@ -41,6 +41,9 @@ export interface TableRowData {
   invoices?: InvoiceRow[];
   freightAndCosts?: string;
   currencyRate?: string;
+  // Which week's Norges Bank rate the currencyRate value corresponds to
+  // (e.g. "17.08.2026–23.08.2026") — shown as its own "Rate Date" column.
+  currencyRateDate?: string;
   // Lifecycle stage for the new filter tabs (Created/Error/Message/Sent/
   // Temporary/Draft). "Open" and "Processed" tabs use the existing
   // status/processed fields instead, since those already carry real meaning.
@@ -113,6 +116,7 @@ export function migrateRecord(raw: Partial<TableRowData> & { id: string }): Tabl
     invoices: Array.isArray(raw.invoices) ? raw.invoices : [],
     freightAndCosts: raw.freightAndCosts ?? '',
     currencyRate: raw.currencyRate ?? '1',
+    currencyRateDate: raw.currencyRateDate ?? '',
     stage: raw.stage ?? 'created',
     sentDate: raw.sentDate ?? '',
     validated: raw.validated ?? false,
