@@ -1240,9 +1240,11 @@ function App() {
             invoiceAmount: record.value,
             currency: record.currency,
             netWeight: record.netWeight,
+            grossWeight: record.grossWeight,
             totalStatisticalValue: record.value, // Using value as placeholder for calc of taxes
             usedAmount: itemsSummary?.totalAmount,
-            usedNetWeight: itemsSummary?.totalNetWeight
+            usedNetWeight: itemsSummary?.totalNetWeight,
+            usedGrossWeight: itemsSummary?.totalGrossWeight
           };
         })() : undefined}
       />
