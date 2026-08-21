@@ -76,10 +76,14 @@ export interface TableRowData {
   sender: {
     name: string;
     address: string;
+    postcode?: string;
+    city?: string;
   };
   consignee: {
     name: string;
     address: string;
+    postcode?: string;
+    city?: string;
   };
   owner: {
     name: string;

@@ -1440,6 +1440,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       </div>
                       <p className="text-[12px] text-black">{record.consignorName || 'Not specified'}</p>
                       <p className="text-[12px] text-black">{record.sender?.address || '—'}</p>
+                      {(record.sender?.postcode || record.sender?.city) && (
+                        <p className="text-[12px] text-black">{[record.sender?.postcode, record.sender?.city].filter(Boolean).join(' ')}</p>
+                      )}
                     </div>
                     <div>
                       <div className="content-stretch flex font-['Calibre:SemiBold',sans-serif] gap-[5px] items-center leading-[0] not-italic text-[12px] text-nowrap tracking-[0.7px] uppercase mb-[4px]">
@@ -1452,6 +1455,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       </div>
                       <p className="text-[12px] text-black">{record.consigneeName || 'Not specified'}</p>
                       <p className="text-[12px] text-black">{record.consignee?.address || '—'}</p>
+                      {(record.consignee?.postcode || record.consignee?.city) && (
+                        <p className="text-[12px] text-black">{[record.consignee?.postcode, record.consignee?.city].filter(Boolean).join(' ')}</p>
+                      )}
                     </div>
                     <div>
                       <div className="content-stretch flex font-['Calibre:SemiBold',sans-serif] gap-[5px] items-center leading-[0] not-italic text-[12px] text-nowrap tracking-[0.7px] uppercase mb-[4px]">

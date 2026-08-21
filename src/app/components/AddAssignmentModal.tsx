@@ -228,14 +228,6 @@ function formatRateDateRange(fromDate: string, toDate: string): string {
   return `${fromShort}\u2013${toDate}`;
 }
 
-// Combines a CompanyData entry's street address with its postcode/city, so
-// the Parties card in Details (which just displays this one string) always
-// shows the full address — not just the street line.
-function buildFullAddress(company: CompanyData | undefined): string {
-  if (!company) return '';
-  return [company.address, company.postcode, company.city].filter(Boolean).join(', ');
-}
-
 export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail, editingRecord, onUpdate }: AddAssignmentModalProps) {
   // Address book — loaded from Supabase (seeded once if empty) instead of a
   // hardcoded array, so it's shared and can grow over time.
@@ -264,8 +256,12 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     internalReference: '',
     consignorName: '',
     consignorAddress: '',
+    consignorPostcode: '',
+    consignorCity: '',
     consigneeName: '',
-    consigneeAddress: ''
+    consigneeAddress: '',
+    consigneePostcode: '',
+    consigneeCity: ''
   });
 
   // Import/Export/EU is derived automatically from the Consignor/Consignee
@@ -326,8 +322,12 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         internalReference: editingRecord.internalReference || '',
         consignorName: editingRecord.consignorName,
         consignorAddress: editingRecord.sender.address,
+        consignorPostcode: editingRecord.sender.postcode || '',
+        consignorCity: editingRecord.sender.city || '',
         consigneeName: editingRecord.consigneeName,
-        consigneeAddress: editingRecord.consignee.address
+        consigneeAddress: editingRecord.consignee.address,
+        consigneePostcode: editingRecord.consignee.postcode || '',
+        consigneeCity: editingRecord.consignee.city || ''
       };
       
       // Restore the actual itemized invoices if we have them (records saved
@@ -368,8 +368,12 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         internalReference: '',
         consignorName: '',
         consignorAddress: '',
+        consignorPostcode: '',
+        consignorCity: '',
         consigneeName: '',
-        consigneeAddress: ''
+        consigneeAddress: '',
+        consigneePostcode: '',
+        consigneeCity: ''
       };
       
       const defaultInvoices = [{
@@ -533,11 +537,15 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
       goodsNo: editingRecord?.goodsNo || '',
       sender: {
         name: formData.consignorName,
-        address: formData.consignorAddress
+        address: formData.consignorAddress,
+        postcode: formData.consignorPostcode,
+        city: formData.consignorCity
       },
       consignee: {
         name: formData.consigneeName,
-        address: formData.consigneeAddress
+        address: formData.consigneeAddress,
+        postcode: formData.consigneePostcode,
+        city: formData.consigneeCity
       },
       owner: editingRecord?.owner || {
         name: '',
@@ -748,7 +756,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     setFormData({ 
                       ...formData, 
                       consignorName: value,
-                      consignorAddress: buildFullAddress(company)
+                      consignorAddress: company?.address || '',
+                      consignorPostcode: company?.postcode || '',
+                      consignorCity: company?.city || ''
                     });
                   }}
                   placeholder="Search Norwegian companies..."
@@ -767,12 +777,13 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     const addressLine = address?.adresse?.join(', ') || '';
                     const city = address?.poststed || '';
                     const postalCode = address?.postnummer || '';
-                    const fullAddress = [addressLine, postalCode, city].filter(Boolean).join(', ');
                     
                     setFormData({
                       ...formData,
                       consignorName: company.navn,
-                      consignorAddress: fullAddress
+                      consignorAddress: addressLine,
+                      consignorPostcode: postalCode,
+                      consignorCity: city
                     });
                     
                     // Open modal to save to database
@@ -852,7 +863,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     setFormData({ 
                       ...formData, 
                       consigneeName: value,
-                      consigneeAddress: buildFullAddress(company)
+                      consigneeAddress: company?.address || '',
+                      consigneePostcode: company?.postcode || '',
+                      consigneeCity: company?.city || ''
                     });
                   }}
                   placeholder="Search Norwegian companies..."
@@ -870,12 +883,13 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                     const addressLine = address?.adresse?.join(', ') || '';
                     const city = address?.poststed || '';
                     const postalCode = address?.postnummer || '';
-                    const fullAddress = [addressLine, postalCode, city].filter(Boolean).join(', ');
                     
                     setFormData({
                       ...formData,
                       consigneeName: company.navn,
-                      consigneeAddress: fullAddress
+                      consigneeAddress: addressLine,
+                      consigneePostcode: postalCode,
+                      consigneeCity: city
                     });
                     
                     // Open modal to save to database
@@ -1267,18 +1281,21 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
           
           // Fill in whichever field (Consignor or Consignee) actually
           // triggered this Brreg selection — not always Consignor.
-          const fullAddress = `${organizationData.address}, ${organizationData.postCode} ${organizationData.city}`;
           if (pendingBrregTarget === 'consignee') {
             setFormData({
               ...formData,
               consigneeName: newCompany.name,
-              consigneeAddress: fullAddress
+              consigneeAddress: organizationData.address,
+              consigneePostcode: organizationData.postCode,
+              consigneeCity: organizationData.city
             });
           } else {
             setFormData({
               ...formData,
               consignorName: newCompany.name,
-              consignorAddress: fullAddress
+              consignorAddress: organizationData.address,
+              consignorPostcode: organizationData.postCode,
+              consignorCity: organizationData.city
             });
           }
           

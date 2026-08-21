@@ -344,14 +344,15 @@ function App() {
   }, []);
 
   // One-time backfill: earlier, selecting a company from the address book
-  // (rather than a live Brreg lookup) dropped postcode/city from the saved
-  // Consignor/Consignee address — this fills those in retroactively by
-  // matching against the address book, but ONLY ever adds to an address,
-  // never replaces or shortens one. Gated by localStorage so it runs once
-  // ever, not on every load.
+  // (rather than a live Brreg lookup) dropped postcode/city for the saved
+  // Consignor/Consignee — this fills those in retroactively (as their own
+  // fields, not appended into the address string) by matching against the
+  // address book, but ONLY ever adds missing postcode/city, never touches
+  // an address that already has them. Gated by localStorage so it runs
+  // once ever, not on every load.
   useEffect(() => {
     if (data.length === 0) return;
-    if (localStorage.getItem('addressBackfillV1Done')) return;
+    if (localStorage.getItem('addressBackfillV2Done')) return;
 
     let cancelled = false;
     fetchAddresses()
@@ -359,30 +360,17 @@ function App() {
         if (cancelled) return;
         const byName = new Map(addresses.map((a) => [a.name, a]));
 
-        const buildFullAddress = (a: { address: string; postCode: string; city: string }) =>
-          [a.address, a.postCode, a.city].filter(Boolean).join(', ');
-
         data.forEach((record) => {
           const updates: Partial<TableRowData> = {};
 
           const senderMatch = record.sender?.name ? byName.get(record.sender.name) : undefined;
-          if (senderMatch && (senderMatch.postCode || senderMatch.city)) {
-            const currentAddress = record.sender?.address || '';
-            const alreadyHasPostcode = !!senderMatch.postCode && currentAddress.includes(senderMatch.postCode);
-            const fullAddress = buildFullAddress(senderMatch);
-            if (!alreadyHasPostcode && fullAddress.length > currentAddress.length) {
-              updates.sender = { name: record.sender!.name, address: fullAddress };
-            }
+          if (senderMatch && !record.sender?.postcode && !record.sender?.city && (senderMatch.postCode || senderMatch.city)) {
+            updates.sender = { name: record.sender!.name, address: record.sender!.address, postcode: senderMatch.postCode, city: senderMatch.city };
           }
 
           const consigneeMatch = record.consignee?.name ? byName.get(record.consignee.name) : undefined;
-          if (consigneeMatch && (consigneeMatch.postCode || consigneeMatch.city)) {
-            const currentAddress = record.consignee?.address || '';
-            const alreadyHasPostcode = !!consigneeMatch.postCode && currentAddress.includes(consigneeMatch.postCode);
-            const fullAddress = buildFullAddress(consigneeMatch);
-            if (!alreadyHasPostcode && fullAddress.length > currentAddress.length) {
-              updates.consignee = { name: record.consignee!.name, address: fullAddress };
-            }
+          if (consigneeMatch && !record.consignee?.postcode && !record.consignee?.city && (consigneeMatch.postCode || consigneeMatch.city)) {
+            updates.consignee = { name: record.consignee!.name, address: record.consignee!.address, postcode: consigneeMatch.postCode, city: consigneeMatch.city };
           }
 
           if (Object.keys(updates).length > 0) {
@@ -393,7 +381,7 @@ function App() {
           }
         });
 
-        localStorage.setItem('addressBackfillV1Done', 'true');
+        localStorage.setItem('addressBackfillV2Done', 'true');
       })
       .catch((err) => console.error('Error running address backfill migration:', err));
 
