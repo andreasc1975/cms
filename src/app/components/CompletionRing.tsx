@@ -13,8 +13,8 @@ interface CompletionRingProps {
  * side of that validation (see lib/declarationCompleteness.ts).
  */
 export function CompletionRing({ percent, filled, total, missingLabels }: CompletionRingProps) {
-  const size = 22;
-  const strokeWidth = 5;
+  const size = 20;
+  const strokeWidth = 3;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percent / 100) * circumference;
