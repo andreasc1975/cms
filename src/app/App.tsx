@@ -717,7 +717,7 @@ function App() {
     // Saved templates and 'all' skip this and rely on the panel criteria below.
     switch (currentFilter) {
       case 'open':
-        result = result.filter(item => item.status === 'O' || item.status === 'PO');
+        result = result.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent');
         break;
       case 'created':
         result = result.filter(item => (item.stage || 'created') === 'created');
@@ -834,7 +834,7 @@ function App() {
   // Calculate counts for filter tabs
   const filterCounts = useMemo(() => {
     const all = data.length;
-    const open = data.filter(item => item.status === 'O' || item.status === 'PO').length;
+    const open = data.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent').length;
     const created = data.filter(item => (item.stage || 'created') === 'created').length;
     const error = data.filter(item => item.stage === 'error').length;
     const message = data.filter(item => item.stage === 'message').length;
