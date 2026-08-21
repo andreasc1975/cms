@@ -1586,26 +1586,30 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                   </div>
                 </div>
 
-                {/* Proposal Action Buttons */}
-                {proposedFields.size > 0 && (
-                  <div className="flex gap-[12px] mt-[8px] justify-end">
+                {/* Proposal Action Buttons — the wrapper always stays in the
+                    DOM (reserving its height) so accepting/clearing the last
+                    proposed field doesn't collapse the layout mid-tab; only
+                    the buttons themselves fade out and stop being reachable. */}
+                <div
+                  className={`flex gap-[12px] mt-[8px] justify-end transition-opacity duration-150 ${
+                    proposedFields.size > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none h-0 mt-0 overflow-hidden'
+                  }`}
+                >
                     <button
                       onClick={handleCancelProposals}
-                      tabIndex={21}
+                      tabIndex={proposedFields.size > 0 ? 21 : -1}
                       className="h-[36px] px-[24px] rounded-[2px] bg-white border border-[#e0e0e0] text-[#003160] font-['Inter'] font-semibold text-[12px] cursor-pointer hover:bg-[#f5f5f5] transition-colors focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
                     >
                       Cancel All
                     </button>
                     <button
                       onClick={handleSubmitProposals}
-                      tabIndex={22}
-                      autoFocus={proposedFields.size > 0}
+                      tabIndex={proposedFields.size > 0 ? 22 : -1}
                       className="h-[36px] px-[24px] rounded-[2px] bg-[#52B89C] text-white font-['Inter'] font-semibold text-[12px] cursor-pointer hover:bg-[#469c85] transition-colors focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
                     >
                       Submit All Proposed
                     </button>
-                  </div>
-                )}
+                </div>
               </div>
           </div>
         </div>
