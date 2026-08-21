@@ -782,13 +782,24 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     const invoiceGrossWeight = parseAmount(record.grossWeight);
     const invoiceParcels = parseAmount(record.noOfParcels);
 
-    if (
-      !closeEnough(invoiceAmount, itemsSummary.totalAmount) ||
-      !closeEnough(invoiceNetWeight, itemsSummary.totalNetWeight) ||
-      !closeEnough(invoiceGrossWeight, itemsSummary.totalGrossWeight) ||
-      !closeEnough(invoiceParcels, itemsSummary.totalNoOfParcels)
-    ) {
-      setSendError('Invoice totals (amount, weight, parcels) don\u2019t match what\u2019s itemized in Items — every invoiced unit must be fully accounted for before sending.');
+    // Built as a list of only the dimensions that actually differ — the
+    // header's progress bars round to whole percent for display, so a real
+    // mismatch under ~0.5% of the total can still show as "100% USED" there.
+    // Showing the exact numbers here is the only way to actually diagnose it.
+    const mismatches: string[] = [];
+    const checkDimension = (label: string, invoiceVal: number, itemsVal: number, unit: string) => {
+      if (!closeEnough(invoiceVal, itemsVal)) {
+        const diff = invoiceVal - itemsVal;
+        mismatches.push(`${label}: invoice ${invoiceVal.toFixed(2)}${unit} vs Items ${itemsVal.toFixed(2)}${unit} (off by ${Math.abs(diff).toFixed(2)}${unit})`);
+      }
+    };
+    checkDimension('Amount', invoiceAmount, itemsSummary.totalAmount, '');
+    checkDimension('Net Weight', invoiceNetWeight, itemsSummary.totalNetWeight, ' kg');
+    checkDimension('Gross Weight', invoiceGrossWeight, itemsSummary.totalGrossWeight, ' kg');
+    checkDimension('Parcels', invoiceParcels, itemsSummary.totalNoOfParcels, '');
+
+    if (mismatches.length > 0) {
+      setSendError(`Invoice totals don\u2019t match what\u2019s itemized in Items — ${mismatches.join('; ')}.`);
       setActiveTab('items');
       onUpdateRecord?.({ stage: 'draft', validated: false });
       addLog(record.id, 'draft', 'Marked as draft — invoice totals don\u2019t match the Items list', 'System').catch((err) => {
