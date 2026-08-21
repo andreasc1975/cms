@@ -370,7 +370,7 @@ export function TopBar({
               )}
               <div className="grid grid-cols-[64px_minmax(90px,1fr)_minmax(90px,1fr)_minmax(70px,0.7fr)_minmax(140px,1.2fr)_minmax(90px,1fr)_minmax(90px,1fr)] gap-x-[16px] gap-y-[10px] items-start">
                 <div className="row-span-2 pt-[2px] flex items-center gap-[6px]" data-name="Status">
-                  {detailData?.status ? <StatusBadge status={detailData.stage === 'sent' ? 'SENT' : detailData.status} /> : <div className="bg-[#9e9e9e] h-[16px] w-[20px] rounded-[1px]" />}
+                  {detailData?.status ? <StatusBadge status={detailData.stage === 'sent' ? 'SENT' : detailData.stage === 'draft' ? 'DRAFT' : detailData.status} /> : <div className="bg-[#9e9e9e] h-[16px] w-[20px] rounded-[1px]" />}
                   <div
                     className="bg-[#003160] content-stretch flex items-center justify-center h-[16px] px-[4px] rounded-[1px] shrink-0"
                     title={detailData?.importExport === 'IM' ? 'Import' : detailData?.importExport === 'EU' ? 'EU trade' : 'Export'}

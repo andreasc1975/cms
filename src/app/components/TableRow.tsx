@@ -192,7 +192,7 @@ export function TableRow({ data, onUpdate, onEdit, onRemove, isSelected = false,
       {/* Status */}
       {vis.status && (
         <div className="box-border content-stretch flex gap-[2px] h-[35px] items-center px-[10px] py-[5px] relative shrink-0 w-[70px]">
-          <StatusBadge status={data.stage === 'sent' ? 'SENT' : data.status} />
+          <StatusBadge status={data.stage === 'sent' ? 'SENT' : data.stage === 'draft' ? 'DRAFT' : data.status} />
         </div>
       )}
 

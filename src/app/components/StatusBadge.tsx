@@ -1,5 +1,5 @@
 interface StatusBadgeProps {
-  status: 'C' | 'PO' | 'O' | 'SENT';
+  status: 'C' | 'PO' | 'O' | 'SENT' | 'DRAFT';
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
@@ -27,6 +27,12 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       label: 'SENT',
       title: 'Sent to customs',
       width: 'w-[34px]'
+    },
+    'DRAFT': {
+      bg: 'bg-[#9e9e9e]',
+      label: 'D',
+      title: 'Draft — missing data needed to send',
+      width: 'w-[20px]'
     }
   };
 

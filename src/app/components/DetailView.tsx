@@ -496,17 +496,17 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
 
     if (scenario.type === 'approved') {
       onUpdateRecord?.({ status: 'C', processed: formattedToday });
-      addLog(record.id, 'processed', 'Tolletaten approved the declaration').catch((err) => {
+      addLog(record.id, 'processed', 'Tolletaten approved the declaration', 'Tolletaten').catch((err) => {
         console.error('Error writing log entry:', err);
       });
     } else if (scenario.type === 'error') {
       onUpdateRecord?.({ stage: 'error' });
-      addLog(record.id, 'error', `Tolletaten rejected the declaration: ${scenario.reason}`).catch((err) => {
+      addLog(record.id, 'error', `Tolletaten rejected the declaration: ${scenario.reason}`, 'Tolletaten').catch((err) => {
         console.error('Error writing log entry:', err);
       });
     } else {
       onUpdateRecord?.({ stage: 'message' });
-      addLog(record.id, 'message', `Message from Tolletaten: ${scenario.reason}`).catch((err) => {
+      addLog(record.id, 'message', `Message from Tolletaten: ${scenario.reason}`, 'Tolletaten').catch((err) => {
         console.error('Error writing log entry:', err);
       });
     }
@@ -698,7 +698,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       setSendError(`Missing required field${missing.length > 1 ? 's' : ''}: ${fieldNames}. Fill in every orange box-numbered field in Details before sending.`);
       setActiveTab('details');
       onUpdateRecord?.({ stage: 'draft' });
-      addLog(record.id, 'draft', `Marked as draft — missing required fields: ${fieldNames}`).catch((err) => {
+      addLog(record.id, 'draft', `Marked as draft — missing required fields: ${fieldNames}`, 'System').catch((err) => {
         console.error('Error writing log entry:', err);
       });
       return;
@@ -721,7 +721,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       setSendError('Invoice totals (amount, weight, parcels) don\u2019t match what\u2019s itemized in Items — every invoiced unit must be fully accounted for before sending.');
       setActiveTab('items');
       onUpdateRecord?.({ stage: 'draft' });
-      addLog(record.id, 'draft', 'Marked as draft — invoice totals don\u2019t match the Items list').catch((err) => {
+      addLog(record.id, 'draft', 'Marked as draft — invoice totals don\u2019t match the Items list', 'System').catch((err) => {
         console.error('Error writing log entry:', err);
       });
       return;
@@ -747,7 +747,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       const formattedToday = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
       onUpdateRecord?.({ stage: 'sent', sentDate: formattedToday });
 
-      addLog(record.id, 'sent', 'Declaration sent to customs').catch((err) => {
+      addLog(record.id, 'sent', 'Declaration sent to customs', record.managedBy || 'System').catch((err) => {
         console.error('Error writing log entry:', err);
       });
 
@@ -1666,12 +1666,21 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
             <p className="text-[13px] text-gray-400">No activity recorded yet.</p>
           ) : (
             <div className="flex flex-col">
+              {/* Column headers */}
+              <div className="flex items-center gap-[16px] border-b border-gray-200 pb-[8px]">
+                <p className="text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] whitespace-nowrap shrink-0 w-[160px]">Time</p>
+                <p className="text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] flex-1">Message</p>
+                <p className="text-[10px] font-bold text-[#003160] uppercase tracking-[0.7px] whitespace-nowrap shrink-0 w-[140px]">User</p>
+              </div>
               {logs.map((entry) => (
                 <div key={entry.id} className="flex items-start gap-[16px] border-b border-gray-100 py-[10px]">
                   <p className="text-[11px] text-gray-400 font-[Roboto_Mono] whitespace-nowrap shrink-0 w-[160px]">
                     {new Date(entry.createdAt).toLocaleString('en-GB')}
                   </p>
-                  <p className="text-[13px] text-black">{entry.message}</p>
+                  <p className="text-[13px] text-black flex-1">{entry.message}</p>
+                  <p className="text-[12px] text-[#003160] font-semibold whitespace-nowrap shrink-0 w-[140px] truncate" title={entry.user}>
+                    {entry.user}
+                  </p>
                 </div>
               ))}
             </div>

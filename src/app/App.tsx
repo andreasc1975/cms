@@ -717,7 +717,7 @@ function App() {
     // Saved templates and 'all' skip this and rely on the panel criteria below.
     switch (currentFilter) {
       case 'open':
-        result = result.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent');
+        result = result.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent' && item.stage !== 'draft');
         break;
       case 'created':
         result = result.filter(item => (item.stage || 'created') === 'created');
@@ -834,7 +834,7 @@ function App() {
   // Calculate counts for filter tabs
   const filterCounts = useMemo(() => {
     const all = data.length;
-    const open = data.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent').length;
+    const open = data.filter(item => (item.status === 'O' || item.status === 'PO') && item.stage !== 'sent' && item.stage !== 'draft').length;
     const created = data.filter(item => (item.stage || 'created') === 'created').length;
     const error = data.filter(item => item.stage === 'error').length;
     const message = data.filter(item => item.stage === 'message').length;
@@ -892,7 +892,7 @@ function App() {
         // resolved, they're currently looking at the temp id — swap it to
         // the real one so DetailView doesn't suddenly stop finding its record.
         setSelectedRecordId((current) => (current === tempId ? saved.id : current));
-        addLog(saved.id, 'created', 'Declaration created').catch((err) => {
+        addLog(saved.id, 'created', 'Declaration created', assignment.managedBy || 'System').catch((err) => {
           console.error('Error writing log entry:', err);
         });
       })
@@ -1026,7 +1026,7 @@ function App() {
     updateDeclaration(id, assignment).catch((err) => {
       console.error('Error updating declaration in Supabase:', err);
     });
-    addLog(id, 'updated', 'Declaration updated').catch((err) => {
+    addLog(id, 'updated', 'Declaration updated', assignment.managedBy || 'System').catch((err) => {
       console.error('Error writing log entry:', err);
     });
     return assignment.customsNo;
@@ -1046,10 +1046,11 @@ function App() {
     // (invoice removed, freight cleared) without telling this handler which,
     // so this stays a general note rather than a precise per-field message.
     const changedFields = Object.keys(updates).filter((k) => k !== 'invoices').join(', ') || 'invoices';
-    addLog(id, 'updated', `Declaration fields updated (${changedFields})`).catch((err) => {
+    const existing = data.find((row) => row.id === id);
+    addLog(id, 'updated', `Declaration fields updated (${changedFields})`, existing?.managedBy || 'System').catch((err) => {
       console.error('Error writing log entry:', err);
     });
-  }, []);
+  }, [data]);
   
   // Sort state
   const [sortColumn, setSortColumn] = useState<string | null>(null);
