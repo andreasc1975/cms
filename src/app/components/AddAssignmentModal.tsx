@@ -712,13 +712,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                 derived automatically from Consignor/Consignee countries) */}
             <div className="grid grid-cols-3 gap-[16px] w-full">
               <CustomDropdown
+                key={`message-declaration-type-${editingRecord?.id || 'new'}`}
                 label="MESSAGE / DECLARATION TYPE"
                 value={formData.messageDeclarationType}
                 options={MESSAGE_DECLARATION_TYPE_OPTIONS}
                 onChange={(value) => setFormData({ ...formData, messageDeclarationType: value })}
                 placeholder="Select type"
                 tabIndex={1}
-                autoFocus={true}
+                autoFocus={!editingRecord}
                 ref={messageDeclarationTypeRef}
               />
 
