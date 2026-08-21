@@ -15,6 +15,13 @@ interface TableHeaderProps {
   flexGrow?: number;
   /** Minimum width (e.g. '110px') the column won't shrink below. Used together with flexGrow. */
   minWidth?: string;
+  /** Must match the corresponding TableRow cell's padding exactly, or the
+   * header label and the data below it visibly drift out of alignment —
+   * defaults follow the same left/right/center conventions TableRow uses,
+   * but pass these explicitly wherever a column's row cell differs (e.g.
+   * Net/Gross Weight use pr-18px, Value uses pr-15px). */
+  paddingLeft?: string;
+  paddingRight?: string;
 }
 
 export function TableHeader({ 
@@ -29,7 +36,9 @@ export function TableHeader({
   onOpenColumnVisibility,
   align = 'left',
   flexGrow,
-  minWidth
+  minWidth,
+  paddingLeft,
+  paddingRight
 }: TableHeaderProps) {
   const responsiveStyle = flexGrow
     ? { flexGrow, flexShrink: 1, flexBasis: 0, minWidth: minWidth || width }
@@ -96,11 +105,19 @@ export function TableHeader({
   // For fixed-width columns
   const justifyClass = align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : 'justify-start';
   const textAlignClass = `text-${align}`;
+  // Default padding matches TableRow's own convention per alignment — but a
+  // column can override either side explicitly via paddingLeft/paddingRight
+  // when its row cell doesn't follow the default (e.g. Net/Gross Weight's
+  // pr-[18px] instead of the usual pr-[15px]).
+  const defaultPaddingLeft = '10px';
+  const defaultPaddingRight = align === 'right' ? '15px' : align === 'center' ? '10px' : '0px';
+  const resolvedPaddingLeft = paddingLeft ?? defaultPaddingLeft;
+  const resolvedPaddingRight = paddingRight ?? defaultPaddingRight;
   
   return (
     <div 
-      className={`box-border content-stretch flex h-[50px] items-center ${justifyClass} px-[10px] py-[5px] relative ${flexGrow ? '' : `shrink-0 ${width || ''}`} ${className} ${sortable ? 'cursor-pointer hover:bg-neutral-50' : ''}`}
-      style={responsiveStyle}
+      className={`box-border content-stretch flex h-[50px] items-center ${justifyClass} relative ${flexGrow ? '' : `shrink-0 ${width || ''}`} ${className} ${sortable ? 'cursor-pointer hover:bg-neutral-50' : ''}`}
+      style={{ ...responsiveStyle, paddingLeft: resolvedPaddingLeft, paddingRight: resolvedPaddingRight, paddingTop: '5px', paddingBottom: '5px' }}
       onClick={handleClick}
     >
       <div className={`font-['Inter'] leading-[0] not-italic text-[#003160] text-[10px] text-nowrap tracking-[0.7px] uppercase font-semibold overflow-hidden text-ellipsis ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'}`}>

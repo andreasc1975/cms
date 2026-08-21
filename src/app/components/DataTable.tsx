@@ -259,6 +259,7 @@ export function DataTable({
             flexGrow={12}
             minWidth="120px"
             align="right"
+            paddingRight="18px"
             sortable={true}
             sortDirection={sortColumn === 'netWeight' ? sortDirection : null}
             onSort={() => onSort?.('netWeight')}
@@ -271,6 +272,7 @@ export function DataTable({
             flexGrow={12}
             minWidth="120px"
             align="right"
+            paddingRight="18px"
             sortable={true}
             sortDirection={sortColumn === 'grossWeight' ? sortDirection : null}
             onSort={() => onSort?.('grossWeight')}

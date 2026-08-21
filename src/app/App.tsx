@@ -277,50 +277,40 @@ function App() {
   const [createdDeclarationId, setCreatedDeclarationId] = useState('');
   
   // Column visibility state
+  const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
+    checkbox: true,
+    status: true,
+    typeBadge: true,
+    customsNo: true,
+    declared: true,
+    processed: true,
+    referenceDeclaration: true,
+    recalculatedFrom: true,
+    invoiceNo: true,
+    consignorName: true,
+    consigneeName: true,
+    value: true,
+    currency: true,
+    netWeight: true,
+    grossWeight: true,
+    completion: true,
+    actions: true
+  };
+
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(() => {
     const saved = localStorage.getItem('warehouseApp_columnVisibility');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Migration: fill in any columns added after this was saved (e.g.
+        // "completion") with their default visibility, without touching
+        // whatever the user already chose for existing columns.
+        return { ...DEFAULT_COLUMN_VISIBILITY, ...parsed };
       } catch {
-        return {
-          checkbox: true,
-          status: true,
-          typeBadge: true,
-          customsNo: true,
-          declared: true,
-          processed: true,
-          referenceDeclaration: true,
-          recalculatedFrom: true,
-          invoiceNo: true,
-          consignorName: true,
-          consigneeName: true,
-          value: true,
-          currency: true,
-          netWeight: true,
-          grossWeight: true,
-          actions: true
-        };
+        return DEFAULT_COLUMN_VISIBILITY;
       }
     }
-    return {
-      checkbox: true,
-      status: true,
-      typeBadge: true,
-      customsNo: true,
-      declared: true,
-      processed: true,
-      referenceDeclaration: true,
-      recalculatedFrom: true,
-      invoiceNo: true,
-      consignorName: true,
-      consigneeName: true,
-      value: true,
-      currency: true,
-      netWeight: true,
-      grossWeight: true,
-      actions: true
-    };
+    return DEFAULT_COLUMN_VISIBILITY;
   });
   
   const [columnVisibilityModalOpen, setColumnVisibilityModalOpen] = useState(false);
