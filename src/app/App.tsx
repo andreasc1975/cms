@@ -15,8 +15,7 @@ import { FilterDrawer, type FilterCriteria } from './components/FilterDrawer';
 import { ColumnVisibilityModal, type ColumnVisibility } from './components/ColumnVisibilityModal';
 import type { TableRowData } from './components/TableRow';
 import { migrateRecords } from './components/TableRow';
-import { fetchDeclarations, createDeclaration, updateDeclaration, deleteDeclaration, saveGeneralFormData } from './lib/declarationsApi';
-import { getProposedGeneralFormData } from './lib/declarationCompleteness';
+import { fetchDeclarations, createDeclaration, updateDeclaration, deleteDeclaration } from './lib/declarationsApi';
 import { addLog } from './lib/logsApi';
 
 export interface FilterTemplate {
@@ -330,30 +329,6 @@ function App() {
         if (cancelled) return;
         setData(rows);
         setDataError(null);
-
-        // One-time backfill: any declaration whose GENERAL data was never
-        // actually saved (created before that fix, or never opened since)
-        // gets its proposed values persisted now, so the completion ring
-        // reflects reality without needing to open every declaration by hand.
-        const needsBackfill = rows.filter((r) => !r.generalFormData || Object.keys(r.generalFormData).length === 0);
-        if (needsBackfill.length > 0) {
-          Promise.all(
-            needsBackfill.map((r) => {
-              const seed = getProposedGeneralFormData(r);
-              return saveGeneralFormData(r.id, seed).then(() => ({ id: r.id, seed }));
-            })
-          )
-            .then((results) => {
-              if (cancelled) return;
-              setData((prev) =>
-                prev.map((row) => {
-                  const match = results.find((res) => res.id === row.id);
-                  return match ? { ...row, generalFormData: match.seed } : row;
-                })
-              );
-            })
-            .catch((err) => console.error('Error backfilling GENERAL form data:', err));
-        }
       })
       .catch((err) => {
         console.error('Error loading declarations from Supabase:', err);
