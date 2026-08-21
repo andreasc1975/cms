@@ -468,6 +468,55 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     };
   }, [activeTab, record.id]);
 
+  // Demo-only: simulates receiving a response from Tolletaten after a
+  // declaration has been sent — a hidden feature (no real customs system is
+  // wired up), for covering multiple scenarios in demos without waiting on
+  // a real integration. Writes a log entry and updates the record just like
+  // a genuine response would.
+  const [simulateMenuOpen, setSimulateMenuOpen] = useState(false);
+
+  type CustomsScenario =
+    | { type: 'approved' }
+    | { type: 'error'; reason: string }
+    | { type: 'message'; reason: string };
+
+  const SIMULATE_SCENARIOS: { label: string; scenario: CustomsScenario }[] = [
+    { label: '✅ Approved', scenario: { type: 'approved' } },
+    { label: '⚠️ Error — Missing supporting documentation', scenario: { type: 'error', reason: 'Missing supporting documentation for item 1' } },
+    { label: '⚠️ Error — Incorrect HS / statistical code', scenario: { type: 'error', reason: 'Incorrect statistical code on item 1' } },
+    { label: '⚠️ Error — Value discrepancy', scenario: { type: 'error', reason: 'Declared value does not match invoice total' } },
+    { label: '💬 Message — Additional information requested', scenario: { type: 'message', reason: 'Tolletaten requests additional information about the goods description' } },
+    { label: '💬 Message — Manual review required', scenario: { type: 'message', reason: 'Declaration selected for manual review — no action needed yet' } }
+  ];
+
+  const simulateCustomsResponse = (scenario: CustomsScenario) => {
+    setSimulateMenuOpen(false);
+    const today = new Date();
+    const formattedToday = `${String(today.getDate()).padStart(2, '0')}.${String(today.getMonth() + 1).padStart(2, '0')}.${today.getFullYear()}`;
+
+    if (scenario.type === 'approved') {
+      onUpdateRecord?.({ status: 'C', processed: formattedToday });
+      addLog(record.id, 'processed', 'Tolletaten approved the declaration').catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
+    } else if (scenario.type === 'error') {
+      onUpdateRecord?.({ stage: 'error' });
+      addLog(record.id, 'error', `Tolletaten rejected the declaration: ${scenario.reason}`).catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
+    } else {
+      onUpdateRecord?.({ stage: 'message' });
+      addLog(record.id, 'message', `Message from Tolletaten: ${scenario.reason}`).catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
+    }
+
+    // Refresh the log list immediately if we're looking at it
+    if (activeTab === 'log') {
+      fetchLogs(record.id).then(setLogs).catch((err) => console.error('Error refreshing logs:', err));
+    }
+  };
+
   // Documents tab — files live in Supabase Storage, listed fresh whenever
   // the tab opens (and after an upload/delete).
   const [documents, setDocuments] = useState<DocumentFile[]>([]);
@@ -1542,7 +1591,36 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       {activeTab === 'log' && (
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="flex-1 px-[10px] pt-[20px] pb-[15px]">
-          <h2 className="text-[#003160] text-[15px] font-bold uppercase mb-[16px]">Log</h2>
+          <div className="flex items-center justify-between mb-[16px]">
+            <h2 className="text-[#003160] text-[15px] font-bold uppercase">Log</h2>
+            {/* Demo-only, deliberately unobtrusive — simulates a Tolletaten
+                response since no real customs integration exists. Only
+                shown once a declaration has actually been sent. */}
+            {record.stage === 'sent' && (
+              <div className="relative">
+                <button
+                  onClick={() => setSimulateMenuOpen((v) => !v)}
+                  className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                  title="Demo: simulate a response from Tolletaten"
+                >
+                  Simulate response…
+                </button>
+                {simulateMenuOpen && (
+                  <div className="absolute right-0 top-[20px] z-50 bg-white border border-gray-200 rounded-[4px] shadow-lg w-[300px] py-[4px]">
+                    {SIMULATE_SCENARIOS.map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => simulateCustomsResponse(item.scenario)}
+                        className="w-full text-left px-[12px] py-[8px] text-[12px] text-black hover:bg-[#f5f5f5] cursor-pointer transition-colors"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           {logsLoading ? (
             <p className="text-[13px] text-gray-400">Loading…</p>
           ) : logs.length === 0 ? (
