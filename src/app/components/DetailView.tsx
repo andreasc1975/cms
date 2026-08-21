@@ -262,7 +262,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     fees: ''
   });
 
-  const defaultDetailData: ItemLineRow[] = Array.from({ length: 10 }, (_, i) => emptyItemLineRow(String(i + 1)));
+  const defaultDetailData: ItemLineRow[] = Array.from({ length: 1 }, (_, i) => emptyItemLineRow(String(i + 1)));
 
   // Default form data
   const defaultFormData: GeneralFormData = {

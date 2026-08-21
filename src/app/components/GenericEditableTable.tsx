@@ -168,31 +168,53 @@ function EditableHeader({
                         className="absolute left-full top-0 ml-1 bg-white border border-[#e5e5e5] rounded shadow-lg min-w-[200px] p-3"
                         onMouseLeave={() => setShowEditAllPanel(false)}
                       >
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={selectedValue}
-                            onChange={(e) => setSelectedValue(e.target.value)}
-                            placeholder="Enter value"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && selectedValue.trim()) {
-                                handleApply();
-                              } else if (e.key === 'Escape') {
-                                onToggleEditMenu?.(field);
-                              }
-                            }}
-                            className="w-full px-3 py-2 border border-[#e5e5e5] rounded font-['Inter'] text-[12px] text-[#000] cursor-text focus:outline-none focus:border-[#446BF9] focus:border-2 font-normal tracking-[0] placeholder:text-[#999]"
-                          />
-                        </div>
-                        <button
-                          onClick={handleApply}
-                          disabled={!selectedValue.trim()}
-                          className="w-full px-3 py-2 font-['Inter'] text-[12px] text-white bg-[#e5e5e5] rounded cursor-pointer border-0 disabled:cursor-not-allowed tracking-[0] font-semibold"
-                          style={selectedValue.trim() ? { backgroundColor: '#446BF9' } : {}}
-                        >
-                          Apply to all
-                        </button>
+                        {columnOptions && columnOptions.length > 0 ? (
+                          // Select-type column — offer the same choices the
+                          // cells themselves use, instead of a free-text box
+                          // that could set every row to something invalid.
+                          <div className="flex flex-col gap-0.5 max-h-[240px] overflow-auto -m-3 p-1">
+                            {columnOptions.map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => {
+                                  onEditAll?.(field, opt);
+                                  onToggleEditMenu?.(field);
+                                }}
+                                className="w-full text-left px-3 py-2 font-['Inter'] text-[12px] text-[#000] hover:bg-[#f0f0f0] cursor-pointer border-0 bg-transparent tracking-[0] font-normal rounded"
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="mb-2">
+                              <input
+                                type="text"
+                                value={selectedValue}
+                                onChange={(e) => setSelectedValue(e.target.value)}
+                                placeholder="Enter value"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && selectedValue.trim()) {
+                                    handleApply();
+                                  } else if (e.key === 'Escape') {
+                                    onToggleEditMenu?.(field);
+                                  }
+                                }}
+                                className="w-full px-3 py-2 border border-[#e5e5e5] rounded font-['Inter'] text-[12px] text-[#000] cursor-text focus:outline-none focus:border-[#446BF9] focus:border-2 font-normal tracking-[0] placeholder:text-[#999]"
+                              />
+                            </div>
+                            <button
+                              onClick={handleApply}
+                              disabled={!selectedValue.trim()}
+                              className="w-full px-3 py-2 font-['Inter'] text-[12px] text-white bg-[#e5e5e5] rounded cursor-pointer border-0 disabled:cursor-not-allowed tracking-[0] font-semibold"
+                              style={selectedValue.trim() ? { backgroundColor: '#446BF9' } : {}}
+                            >
+                              Apply to all
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1082,6 +1104,36 @@ export function GenericEditableTable<T extends Record<string, any>>({
               );
             })}
           </tbody>
+          <tfoot>
+            {/* Totals row for every numeric column — shown regardless of how
+                many rows exist, so it's always visible without scrolling. */}
+            <tr className="border-t-2 border-[#003160] bg-[#f5f7fa] sticky bottom-0 z-10">
+              {columns.filter(col => visibleColumns.has(col.key)).map((column, idx) => {
+                const isNumeric = column.type === 'number';
+                const sum = isNumeric
+                  ? data.reduce((acc, row) => {
+                      const raw = String(row[column.key] ?? '').replace(/,/g, '');
+                      const n = parseFloat(raw);
+                      return acc + (isNaN(n) ? 0 : n);
+                    }, 0)
+                  : null;
+                return (
+                  <td
+                    key={`footer-${column.key}`}
+                    className={`px-2 py-2 font-['Roboto_Mono'] text-[12px] text-[#003160] font-bold whitespace-nowrap ${isNumeric ? 'text-right' : 'text-left'}`}
+                  >
+                    {isNumeric
+                      ? sum!.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : idx === 0
+                      ? 'Total'
+                      : ''}
+                  </td>
+                );
+              })}
+              <td className="px-2 py-2 w-[50px]"></td>
+              {enableColumnChooser && <td className="px-2 py-2 w-[50px]"></td>}
+            </tr>
+          </tfoot>
         </table>
       </div>
 
