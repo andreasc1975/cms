@@ -791,12 +791,13 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     }
 
     // 2. Invoice totals must match what's actually been itemized in Items —
-    // only Amount and Net Weight are checked; Gross Weight and Parcels are
-    // deliberately not validated, sending is allowed regardless of those two.
+    // Amount, Net Weight, and Gross Weight are checked; Parcels is
+    // deliberately not validated, sending is allowed regardless of that one.
     const closeEnough = (a: number, b: number) => Math.abs(a - b) < 0.01;
     const parseAmount = (v: string | undefined) => parseFloat((v || '0').replace(/,/g, '')) || 0;
     const invoiceAmount = parseAmount(record.value);
     const invoiceNetWeight = parseAmount(record.netWeight);
+    const invoiceGrossWeight = parseAmount(record.grossWeight);
 
     // Built as a list of only the dimensions that actually differ — the
     // header's progress bars round to whole percent for display, so a real
@@ -811,6 +812,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     };
     checkDimension('Amount', invoiceAmount, itemsSummary.totalAmount, '');
     checkDimension('Net Weight', invoiceNetWeight, itemsSummary.totalNetWeight, ' kg');
+    checkDimension('Gross Weight', invoiceGrossWeight, itemsSummary.totalGrossWeight, ' kg');
 
     if (mismatches.length > 0) {
       setSendError(`Invoice totals don\u2019t match what\u2019s itemized in Items — ${mismatches.join('; ')}.`);
