@@ -666,6 +666,10 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       const fieldNames = missing.map((key) => GENERAL_FIELD_LABELS[key]).join(', ');
       setSendError(`Missing required field${missing.length > 1 ? 's' : ''}: ${fieldNames}. Fill in every orange box-numbered field in Details before sending.`);
       setActiveTab('details');
+      onUpdateRecord?.({ stage: 'draft' });
+      addLog(record.id, 'draft', `Marked as draft — missing required fields: ${fieldNames}`).catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
       return;
     }
 
@@ -685,6 +689,10 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     ) {
       setSendError('Invoice totals (amount, weight, parcels) don\u2019t match what\u2019s itemized in Items — every invoiced unit must be fully accounted for before sending.');
       setActiveTab('items');
+      onUpdateRecord?.({ stage: 'draft' });
+      addLog(record.id, 'draft', 'Marked as draft — invoice totals don\u2019t match the Items list').catch((err) => {
+        console.error('Error writing log entry:', err);
+      });
       return;
     }
 
