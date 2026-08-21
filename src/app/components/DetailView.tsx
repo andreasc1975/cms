@@ -1098,9 +1098,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       defaultVisible: true
     },
     {
-      key: 'netWeight',
-      label: 'Net Weight',
-      numberPrefix: '38',
+      key: 'GrossWeight',
+      label: 'Gross Weight',
+      numberPrefix: '35',
       type: 'number',
       minWidth: '140px',
       editable: true,
@@ -1108,9 +1108,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       defaultVisible: true
     },
     {
-      key: 'grossWeight',
-      label: 'Gross Weight',
-      numberPrefix: '35',
+      key: 'NetWeight',
+      label: 'Net Weight',
+      numberPrefix: '38',
       type: 'number',
       minWidth: '140px',
       editable: true,
