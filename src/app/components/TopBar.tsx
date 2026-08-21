@@ -12,7 +12,8 @@ interface TopBarProps {
   onDeleteSelected?: () => void;
   onEditClick?: () => void;
   onPdfPreviewClick?: () => void;
-  onValidateAndSend?: () => void;
+  onValidate?: () => void;
+  onSend?: () => void;
   onBackClick?: () => void;
   showBackButton?: boolean;
   hasSelection?: boolean;
@@ -27,6 +28,7 @@ interface TopBarProps {
     customsNo?: string;
     sendDate?: string;
     stage?: string;
+    validated?: boolean;
     importExport?: string;
     managedBy?: string;
     customsClearanceUnit?: string;
@@ -80,7 +82,8 @@ export function TopBar({
   onDeleteSelected, 
   onEditClick, 
   onPdfPreviewClick, 
-  onValidateAndSend, 
+  onValidate, 
+  onSend, 
   onBackClick, 
   showBackButton = false, 
   hasSelection = false, 
@@ -499,15 +502,33 @@ export function TopBar({
                 </p>
               </div>
 
-              {/* Validate and Send — hidden once the declaration has been sent, there's nothing left to send */}
+              {/* Validate / Send — split so Send only ever fires once a
+                  successful Validate has run since the last edit; hidden
+                  entirely once the declaration has been sent, since
+                  there's nothing left to validate or send at that point. */}
               {detailData?.stage !== 'sent' && (
-                <button
-                  onClick={onValidateAndSend}
-                  className="bg-gradient-to-t from-[#0058ac] to-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
-                  data-name="Button/Validate and Send"
-                >
-                  <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-white whitespace-nowrap">Validate and Send</span>
-                </button>
+                <div className="flex gap-[8px] shrink-0">
+                  <button
+                    onClick={onValidate}
+                    className="bg-white border border-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:bg-[#f5f8ff] transition-colors focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
+                    data-name="Button/Validate"
+                  >
+                    <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-[#446bf9] whitespace-nowrap">Validate</span>
+                  </button>
+                  <button
+                    onClick={onSend}
+                    disabled={!detailData?.validated}
+                    title={!detailData?.validated ? 'Run Validate first' : undefined}
+                    className={`box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] ${
+                      detailData?.validated
+                        ? 'bg-gradient-to-t from-[#0058ac] to-[#446bf9] cursor-pointer hover:opacity-90'
+                        : 'bg-[#9e9e9e] cursor-not-allowed opacity-60'
+                    }`}
+                    data-name="Button/Send"
+                  >
+                    <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-white whitespace-nowrap">Send</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>

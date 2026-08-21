@@ -96,7 +96,8 @@ export interface DetailViewProps {
  * button trigger the send flow, even though the data it needs to validate
  * (GENERAL form fields, Items totals) only exists inside this component. */
 export interface DetailViewRef {
-  validateAndSend: () => void;
+  validate: () => void;
+  send: () => void;
 }
 
 interface ItemLineRow {
@@ -753,7 +754,11 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formDataLoaded, itemsLoaded, formData, itemsSummary, record.value, record.netWeight, record.grossWeight, record.noOfParcels, record.stage]);
 
-  const validateAndSend = useCallback(() => {
+  // "Validate" — runs the two checks and, on success, marks the declaration
+  // validated (persisted, so leaving and coming back without further edits
+  // doesn't require re-running this). On failure, behaves like before:
+  // marks it Draft with a log entry explaining why.
+  const handleValidate = useCallback(() => {
     setSendError(null);
 
     // 1. Every field with an orange declaration-form box number must be filled in.
@@ -762,7 +767,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       const fieldNames = missing.map((key) => GENERAL_FIELD_LABELS[key]).join(', ');
       setSendError(`Missing required field${missing.length > 1 ? 's' : ''}: ${fieldNames}. Fill in every orange box-numbered field in Details before sending.`);
       setActiveTab('details');
-      onUpdateRecord?.({ stage: 'draft' });
+      onUpdateRecord?.({ stage: 'draft', validated: false });
       addLog(record.id, 'draft', `Marked as draft — missing required fields: ${fieldNames}`, 'System').catch((err) => {
         console.error('Error writing log entry:', err);
       });
@@ -785,14 +790,24 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     ) {
       setSendError('Invoice totals (amount, weight, parcels) don\u2019t match what\u2019s itemized in Items — every invoiced unit must be fully accounted for before sending.');
       setActiveTab('items');
-      onUpdateRecord?.({ stage: 'draft' });
+      onUpdateRecord?.({ stage: 'draft', validated: false });
       addLog(record.id, 'draft', 'Marked as draft — invoice totals don\u2019t match the Items list', 'System').catch((err) => {
         console.error('Error writing log entry:', err);
       });
       return;
     }
 
-    // 3. Show the sending animation, then actually "send".
+    // Passed both checks — Send unlocks, and stays unlocked until the
+    // declaration is edited again (see the invalidation effect below).
+    onUpdateRecord?.({ validated: true, stage: record.stage === 'draft' ? 'created' : record.stage });
+  }, [formData, record, itemsSummary, onUpdateRecord]);
+
+  // "Send" — only reachable when validated is true (the button is disabled
+  // otherwise), so no re-validation happens here; it just performs the
+  // actual send.
+  const handleSend = useCallback(() => {
+    if (!record.validated) return;
+
     setSendState('sending');
 
     setTimeout(() => {
@@ -818,9 +833,29 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
 
       setSendState('idle');
     }, 1800);
-  }, [formData, record, itemsSummary, detailData, onUpdateRecord, activeTab]);
+  }, [formData, record, detailData, onUpdateRecord, activeTab]);
 
-  useImperativeHandle(ref, () => ({ validateAndSend }), [validateAndSend]);
+  useImperativeHandle(ref, () => ({ validate: handleValidate, send: handleSend }), [handleValidate, handleSend]);
+
+  // Any edit to the declaration invalidates a prior Validate — Send locks
+  // again until Validate is re-run. Waits for both formData and Items to
+  // have actually finished their initial load before treating any change
+  // as a real edit, so the async data arriving on open doesn't itself
+  // count as "the user changed something". The Freight/Invoices panel's
+  // own edits go through onUpdateRecord directly (see its calls below) so
+  // they set validated: false there instead of relying on this effect.
+  const invalidationBaselineSet = useRef(false);
+  useEffect(() => {
+    if (!formDataLoaded || !itemsLoaded) return;
+    if (!invalidationBaselineSet.current) {
+      invalidationBaselineSet.current = true;
+      return;
+    }
+    if (record.validated) {
+      onUpdateRecord?.({ validated: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, detailData, formDataLoaded, itemsLoaded]);
 
   useEffect(() => {
     onItemsSummaryChange?.(itemsSummary);
@@ -1258,7 +1293,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                       )}
                       {!!record.freightAndCosts && !isSent && (
                         <button
-                          onClick={() => onUpdateRecord?.({ freightAndCosts: '' })}
+                          onClick={() => onUpdateRecord?.({ freightAndCosts: '', validated: false })}
                           className="cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
                           title="Clear freight cost"
                         >
@@ -1296,7 +1331,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                           <button
                             onClick={() => {
                               const updatedInvoices = (record.invoices || []).filter((i) => i.id !== invoice.id);
-                              onUpdateRecord?.(recomputeInvoiceAggregates(updatedInvoices));
+                              onUpdateRecord?.({ ...recomputeInvoiceAggregates(updatedInvoices), validated: false });
                             }}
                             className="absolute top-[6px] right-[6px] cursor-pointer hover:opacity-70 transition-opacity focus:outline-none focus:ring-2 focus:ring-[#446BF9] rounded"
                             title="Remove invoice"

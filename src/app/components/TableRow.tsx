@@ -49,6 +49,11 @@ export interface TableRowData {
   // separate from `processed` (which means customs has cleared it, a later,
   // distinct step) so the header's "Send Date" and the Processed tab don't
   // get conflated.
+  // Set once by Validate; Send stays disabled until this is true. Any edit
+  // to the declaration (GENERAL fields, Items, invoices) invalidates it
+  // again — persisted so leaving and returning without changes doesn't
+  // require re-validating.
+  validated?: boolean;
   sentDate?: string;
   // Raw GENERAL form data (box-numbered fields) — fetched alongside
   // everything else in the main list query, used to compute the
@@ -110,6 +115,7 @@ export function migrateRecord(raw: Partial<TableRowData> & { id: string }): Tabl
     currencyRate: raw.currencyRate ?? '1',
     stage: raw.stage ?? 'created',
     sentDate: raw.sentDate ?? '',
+    validated: raw.validated ?? false,
     processed: raw.processed ?? '',
     referenceDeclaration: raw.referenceDeclaration ?? '',
     recalculatedFrom: raw.recalculatedFrom ?? '',

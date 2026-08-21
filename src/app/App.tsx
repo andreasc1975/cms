@@ -1139,7 +1139,8 @@ function App() {
         onDeleteSelected={handleDeleteSelected}
         onEditClick={() => selectedRecordId && handleEditRow(selectedRecordId)}
         onPdfPreviewClick={() => setPdfPreviewOpen((v) => !v)}
-        onValidateAndSend={() => detailViewRef.current?.validateAndSend()}
+        onValidate={() => detailViewRef.current?.validate()}
+        onSend={() => detailViewRef.current?.send()}
         hasSelection={selectedRows.size > 0}
         showBackButton={!!selectedRecordId}
         sidebarWidth={sidebarWidth}
@@ -1156,6 +1157,7 @@ function App() {
             customsNo: record.customsNo,
             sendDate: record.sentDate,
             stage: record.stage,
+            validated: record.validated,
             importExport: record.declarationType || (record.typeBadge === 'E' ? 'EX' : 'IM'),
             messageDeclarationType: record.messageDeclarationType,
             managedBy: record.managedBy || 'Not assigned',

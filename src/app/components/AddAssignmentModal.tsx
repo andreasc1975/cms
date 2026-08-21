@@ -481,7 +481,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         name: '',
         address: ''
       },
-      withdrawals: editingRecord?.withdrawals
+      withdrawals: editingRecord?.withdrawals,
+      // Preserve these across an edit — they're populated by DetailView, not
+      // this form, so if we don't carry them forward here they'd silently
+      // reset (completion ring back to empty, "not sent" losing its date).
+      // validated is deliberately NOT carried forward — editing the
+      // declaration should invalidate a prior Validate, same as any other change.
+      generalFormData: editingRecord?.generalFormData,
+      sentDate: editingRecord?.sentDate || ''
     };
 
     if (editingRecord && onUpdate) {
