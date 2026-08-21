@@ -657,6 +657,37 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
   const [sendState, setSendState] = useState<'idle' | 'sending'>('idle');
   const [sendError, setSendError] = useState<string | null>(null);
 
+  // Continuously (not just on an explicit Send click) reflects whether this
+  // declaration currently has what it needs to be sendable — marks it
+  // 'draft' if not, 'created' if it does. Only manages that draft<->created
+  // boundary; a declaration that's actually been sent, errored, gotten a
+  // message, or been explicitly marked temporary is left alone. Runs once
+  // both the GENERAL form and Items have loaded, and re-runs on every edit,
+  // so this stays accurate as data changes — including for existing
+  // declarations that were created before this check existed, the first
+  // time they're opened again.
+  useEffect(() => {
+    if (!formDataLoaded || !itemsLoaded) return;
+    if (record.stage && !['created', 'draft'].includes(record.stage)) return;
+
+    const missing = REQUIRED_GENERAL_FIELDS.filter((key) => !formData[key] || !formData[key].trim());
+
+    const closeEnough = (a: number, b: number) => Math.abs(a - b) < 0.01;
+    const parseAmount = (v: string | undefined) => parseFloat((v || '0').replace(/,/g, '')) || 0;
+    const totalsMismatch =
+      !closeEnough(parseAmount(record.value), itemsSummary.totalAmount) ||
+      !closeEnough(parseAmount(record.netWeight), itemsSummary.totalNetWeight) ||
+      !closeEnough(parseAmount(record.grossWeight), itemsSummary.totalGrossWeight) ||
+      !closeEnough(parseAmount(record.noOfParcels), itemsSummary.totalNoOfParcels);
+
+    const shouldBeDraft = missing.length > 0 || totalsMismatch;
+    const newStage = shouldBeDraft ? 'draft' : 'created';
+    if (record.stage !== newStage) {
+      onUpdateRecord?.({ stage: newStage });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formDataLoaded, itemsLoaded, formData, itemsSummary, record.value, record.netWeight, record.grossWeight, record.noOfParcels, record.stage]);
+
   const validateAndSend = useCallback(() => {
     setSendError(null);
 
