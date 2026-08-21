@@ -1420,29 +1420,6 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                     ))}
                   </div>
                 </div>
-
-                {/* Card: Gross Weight — same total/used figures as the
-                    header's progress bar, shown here too since this data is
-                    registered on every existing declaration. */}
-                {(() => {
-                  const grossWeightTotal = parseFloat((record.grossWeight || '0').replace(/,/g, '')) || 0;
-                  const grossWeightUsed = itemsSummary.totalGrossWeight;
-                  const grossWeightPercent = grossWeightTotal > 0 ? Math.max(0, Math.min(100, (grossWeightUsed / grossWeightTotal) * 100)) : 0;
-                  return (
-                    <div className="border border-gray-200 rounded-[6px] p-[12px] mb-[16px]">
-                      <h3 className="text-[#003160] text-[13px] font-bold uppercase mb-[8px]">Gross Weight</h3>
-                      <p className="text-[12px] text-black font-[Roboto_Mono] mb-[6px]">
-                        {grossWeightUsed.toFixed(2)} / {grossWeightTotal.toFixed(2)} KG
-                      </p>
-                      <div className="flex items-center gap-[10px]">
-                        <div className="flex-1 h-[6px] bg-[#e0e0e0] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#52b89c] rounded-full transition-all" style={{ width: `${grossWeightPercent}%` }} />
-                        </div>
-                        <span className="text-[#52b89c] text-[11px] font-bold whitespace-nowrap">{Math.round(grossWeightPercent)}% USED</span>
-                      </div>
-                    </div>
-                  );
-                })()}
               </div>
 
               {/* Grouped cards */}
