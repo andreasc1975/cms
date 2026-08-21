@@ -1107,7 +1107,7 @@ export function GenericEditableTable<T extends Record<string, any>>({
           <tfoot>
             {/* Totals row for every numeric column — shown regardless of how
                 many rows exist, so it's always visible without scrolling. */}
-            <tr className="border-t-2 border-[#003160] bg-[#f5f7fa] sticky bottom-0 z-10">
+            <tr className="border-t border-gray-300 bg-[#f5f5f5] sticky bottom-0 z-10">
               {columns.filter(col => visibleColumns.has(col.key)).map((column, idx) => {
                 const isNumeric = column.type === 'number';
                 const sum = isNumeric
