@@ -34,7 +34,6 @@ export interface CompletionInfo {
   percent: number;
   missingLabels: string[];
 }
-
 /**
  * How complete a declaration's required GENERAL fields are, based on the
  * raw general_form_data JSONB blob (already fetched for every row in the
@@ -54,5 +53,24 @@ export function getCompletionInfo(generalFormData: Record<string, any> | null | 
     total,
     percent: Math.round((filled / total) * 100),
     missingLabels: missing.map((k) => REQUIRED_GENERAL_FIELD_LABELS[k])
+  };
+}
+
+/**
+ * Same "proposed values from the Create modal" seed DetailView computes for
+ * a freshly-opened record with no saved GENERAL data yet — extracted here
+ * so App.tsx can retroactively seed existing declarations that have never
+ * actually been opened (and so never got this far) without needing
+ * DetailView to mount for each one.
+ */
+export function getProposedGeneralFormData(record: {
+  declarationType?: string;
+  messageDeclarationType?: string;
+  internalReference?: string;
+}): Record<string, string> {
+  return {
+    declarationType: record.declarationType || '',
+    declarationStatus: record.messageDeclarationType || '',
+    internalReference: record.internalReference || ''
   };
 }
