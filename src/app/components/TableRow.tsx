@@ -78,12 +78,16 @@ export interface TableRowData {
     address: string;
     postcode?: string;
     city?: string;
+    orgNo?: string;
+    country?: string;
   };
   consignee: {
     name: string;
     address: string;
     postcode?: string;
     city?: string;
+    orgNo?: string;
+    country?: string;
   };
   owner: {
     name: string;

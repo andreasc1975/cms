@@ -258,10 +258,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
     consignorAddress: '',
     consignorPostcode: '',
     consignorCity: '',
+    consignorOrgNo: '',
+    consignorCountry: '',
     consigneeName: '',
     consigneeAddress: '',
     consigneePostcode: '',
-    consigneeCity: ''
+    consigneeCity: '',
+    consigneeOrgNo: '',
+    consigneeCountry: ''
   });
 
   // Import/Export/EU is derived automatically from the Consignor/Consignee
@@ -324,10 +328,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         consignorAddress: editingRecord.sender.address,
         consignorPostcode: editingRecord.sender.postcode || '',
         consignorCity: editingRecord.sender.city || '',
+        consignorOrgNo: editingRecord.sender.orgNo || '',
+        consignorCountry: editingRecord.sender.country || '',
         consigneeName: editingRecord.consigneeName,
         consigneeAddress: editingRecord.consignee.address,
         consigneePostcode: editingRecord.consignee.postcode || '',
-        consigneeCity: editingRecord.consignee.city || ''
+        consigneeCity: editingRecord.consignee.city || '',
+        consigneeOrgNo: editingRecord.consignee.orgNo || '',
+        consigneeCountry: editingRecord.consignee.country || ''
       };
       
       // Restore the actual itemized invoices if we have them (records saved
@@ -370,10 +378,14 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         consignorAddress: '',
         consignorPostcode: '',
         consignorCity: '',
+        consignorOrgNo: '',
+        consignorCountry: '',
         consigneeName: '',
         consigneeAddress: '',
         consigneePostcode: '',
-        consigneeCity: ''
+        consigneeCity: '',
+        consigneeOrgNo: '',
+        consigneeCountry: ''
       };
       
       const defaultInvoices = [{
@@ -539,13 +551,17 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
         name: formData.consignorName,
         address: formData.consignorAddress,
         postcode: formData.consignorPostcode,
-        city: formData.consignorCity
+        city: formData.consignorCity,
+        orgNo: formData.consignorOrgNo,
+        country: formData.consignorCountry
       },
       consignee: {
         name: formData.consigneeName,
         address: formData.consigneeAddress,
         postcode: formData.consigneePostcode,
-        city: formData.consigneeCity
+        city: formData.consigneeCity,
+        orgNo: formData.consigneeOrgNo,
+        country: formData.consigneeCountry
       },
       owner: editingRecord?.owner || {
         name: '',
@@ -758,7 +774,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                       consignorName: value,
                       consignorAddress: company?.address || '',
                       consignorPostcode: company?.postcode || '',
-                      consignorCity: company?.city || ''
+                      consignorCity: company?.city || '',
+                      consignorOrgNo: company?.orgNo || '',
+                      consignorCountry: company?.country || ''
                     });
                   }}
                   placeholder="Search Norwegian companies..."
@@ -783,7 +801,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                       consignorName: company.navn,
                       consignorAddress: addressLine,
                       consignorPostcode: postalCode,
-                      consignorCity: city
+                      consignorCity: city,
+                      consignorOrgNo: company.organisasjonsnummer,
+                      consignorCountry: 'Norway'
                     });
                     
                     // Open modal to save to database
@@ -865,7 +885,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                       consigneeName: value,
                       consigneeAddress: company?.address || '',
                       consigneePostcode: company?.postcode || '',
-                      consigneeCity: company?.city || ''
+                      consigneeCity: company?.city || '',
+                      consigneeOrgNo: company?.orgNo || '',
+                      consigneeCountry: company?.country || ''
                     });
                   }}
                   placeholder="Search Norwegian companies..."
@@ -889,7 +911,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
                       consigneeName: company.navn,
                       consigneeAddress: addressLine,
                       consigneePostcode: postalCode,
-                      consigneeCity: city
+                      consigneeCity: city,
+                      consigneeOrgNo: company.organisasjonsnummer,
+                      consigneeCountry: 'Norway'
                     });
                     
                     // Open modal to save to database
@@ -1287,7 +1311,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
               consigneeName: newCompany.name,
               consigneeAddress: organizationData.address,
               consigneePostcode: organizationData.postCode,
-              consigneeCity: organizationData.city
+              consigneeCity: organizationData.city,
+              consigneeOrgNo: newCompany.orgNo || '',
+              consigneeCountry: newCompany.country || ''
             });
           } else {
             setFormData({
@@ -1295,7 +1321,9 @@ export function AddAssignmentModal({ isOpen, onClose, onSave, onNavigateToDetail
               consignorName: newCompany.name,
               consignorAddress: organizationData.address,
               consignorPostcode: organizationData.postCode,
-              consignorCity: organizationData.city
+              consignorCity: organizationData.city,
+              consignorOrgNo: newCompany.orgNo || '',
+              consignorCountry: newCompany.country || ''
             });
           }
           

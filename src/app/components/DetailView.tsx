@@ -402,22 +402,30 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
   }, [proposedFields, record.id, formDataLoaded]);
 
 
-  // State for the Brønnøysundregistrene lookup, plus the consignee's org
-  // number (persisted per-declaration only implicitly for now — the lookup
-  // itself is stateless and re-runs on mount).
-  const [orgNoConsignee] = useState(() => Math.floor(100000000 + Math.random() * 900000000).toString());
+  // Check whether the Norwegian party's (Consignor or Consignee, whichever
+  // one is actually Norway-based per its saved country) real org number is
+  // registered in Brønnøysundregistrene, via their public API. There's
+  // nothing to check for the foreign party — it wouldn't be in a Norwegian
+  // registry regardless, so showing "not found" for it would be misleading.
+  const brregParty = record.consignee?.country === 'Norway'
+    ? { role: 'Consignee', orgNo: record.consignee?.orgNo }
+    : record.sender?.country === 'Norway'
+    ? { role: 'Consignor', orgNo: record.sender?.orgNo }
+    : null;
 
-  // Check whether the consignee's org number is registered in Brønnøysundregistrene
-  // (Norway's official business register) via their public, unauthenticated API.
   const [brregStatus, setBrregStatus] = useState<'loading' | 'found' | 'not-found' | 'error'>('loading');
   const [brregName, setBrregName] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!brregParty?.orgNo) {
+      setBrregStatus('error');
+      return;
+    }
     let cancelled = false;
     setBrregStatus('loading');
     setBrregName(null);
 
-    fetch(`https://data.brreg.no/enhetsregisteret/api/enheter/${orgNoConsignee}`)
+    fetch(`https://data.brreg.no/enhetsregisteret/api/enheter/${brregParty.orgNo}`)
       .then((res) => {
         if (cancelled) return null;
         if (res.status === 404) {
@@ -439,7 +447,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     return () => {
       cancelled = true;
     };
-  }, [orgNoConsignee]);
+  }, [brregParty?.orgNo]);
 
   // Items rows — loaded from Supabase (shared across visitors).
   const [detailData, setDetailData] = useState<ItemLineRow[]>(defaultDetailData);
@@ -1462,40 +1470,50 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                     <div>
                       <div className="content-stretch flex font-['Calibre:SemiBold',sans-serif] gap-[5px] items-center leading-[0] not-italic text-[12px] text-nowrap tracking-[0.7px] uppercase mb-[4px]">
                         <div className="flex flex-col justify-center overflow-ellipsis overflow-hidden relative shrink-0 text-[#003160]">
-                          <p className="leading-[normal] overflow-ellipsis overflow-hidden text-nowrap whitespace-pre font-bold text-[11px]">Org. No Consignee</p>
+                          <p className="leading-[normal] overflow-ellipsis overflow-hidden text-nowrap whitespace-pre font-bold text-[11px]">
+                            {brregParty ? `Org. No ${brregParty.role}` : 'Org. No'}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-[12px] text-black mb-[4px]">{orgNoConsignee}</p>
+                      {!brregParty ? (
+                        <p className="text-[11px] text-gray-400">No Norwegian party on this declaration to verify.</p>
+                      ) : !brregParty.orgNo ? (
+                        <p className="text-[11px] text-gray-400">No org. number on file for the {brregParty.role.toLowerCase()}.</p>
+                      ) : (
+                        <>
+                          <p className="text-[12px] text-black mb-[4px]">{brregParty.orgNo}</p>
 
-                      {brregStatus === 'loading' && (
-                        <span className="text-[11px] text-gray-400">Sjekker Brønnøysundregistrene…</span>
-                      )}
-                      {brregStatus === 'found' && (
-                        <span className="inline-flex items-center gap-[4px] text-[11px] text-[#0F6E56] font-semibold">
-                          <span className="w-[6px] h-[6px] rounded-full bg-[#52B89C] shrink-0" />
-                          Registrert{brregName ? ` – ${brregName}` : ''}
-                        </span>
-                      )}
-                      {brregStatus === 'not-found' && (
-                        <span className="inline-flex items-center gap-[4px] text-[11px] text-[#854F0B] font-semibold">
-                          <span className="w-[6px] h-[6px] rounded-full bg-[#F0997B] shrink-0" />
-                          Ikke funnet i Brønnøysundregistrene
-                        </span>
-                      )}
-                      {brregStatus === 'error' && (
-                        <span className="text-[11px] text-gray-400">Kunne ikke sjekke registrering</span>
-                      )}
+                          {brregStatus === 'loading' && (
+                            <span className="text-[11px] text-gray-400">Sjekker Brønnøysundregistrene…</span>
+                          )}
+                          {brregStatus === 'found' && (
+                            <span className="inline-flex items-center gap-[4px] text-[11px] text-[#0F6E56] font-semibold">
+                              <span className="w-[6px] h-[6px] rounded-full bg-[#52B89C] shrink-0" />
+                              Registrert{brregName ? ` – ${brregName}` : ''}
+                            </span>
+                          )}
+                          {brregStatus === 'not-found' && (
+                            <span className="inline-flex items-center gap-[4px] text-[11px] text-[#854F0B] font-semibold">
+                              <span className="w-[6px] h-[6px] rounded-full bg-[#F0997B] shrink-0" />
+                              Ikke funnet i Brønnøysundregistrene
+                            </span>
+                          )}
+                          {brregStatus === 'error' && (
+                            <span className="text-[11px] text-gray-400">Kunne ikke sjekke registrering</span>
+                          )}
 
-                      <div className="mt-[4px]">
-                        <a
-                          href={`https://virksomhet.brreg.no/nb/oppslag/enheter/${orgNoConsignee}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[11px] text-[#446BF9] hover:underline"
-                        >
-                          Se i Brønnøysundregistrene ↗
-                        </a>
-                      </div>
+                          <div className="mt-[4px]">
+                            <a
+                              href={`https://virksomhet.brreg.no/nb/oppslag/enheter/${brregParty.orgNo}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-[#446BF9] hover:underline"
+                            >
+                              Se i Brønnøysundregistrene ↗
+                            </a>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

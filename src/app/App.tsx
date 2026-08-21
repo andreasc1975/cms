@@ -344,15 +344,14 @@ function App() {
   }, []);
 
   // One-time backfill: earlier, selecting a company from the address book
-  // (rather than a live Brreg lookup) dropped postcode/city for the saved
-  // Consignor/Consignee — this fills those in retroactively (as their own
-  // fields, not appended into the address string) by matching against the
-  // address book, but ONLY ever adds missing postcode/city, never touches
-  // an address that already has them. Gated by localStorage so it runs
-  // once ever, not on every load.
+  // (rather than a live Brreg lookup) dropped postcode/city/org.no/country
+  // for the saved Consignor/Consignee — this fills those in retroactively
+  // (as their own fields) by matching against the address book, but ONLY
+  // ever adds missing fields, never touches ones that already have a value.
+  // Gated by localStorage so it runs once ever, not on every load.
   useEffect(() => {
     if (data.length === 0) return;
-    if (localStorage.getItem('addressBackfillV2Done')) return;
+    if (localStorage.getItem('addressBackfillV3Done')) return;
 
     let cancelled = false;
     fetchAddresses()
@@ -364,13 +363,35 @@ function App() {
           const updates: Partial<TableRowData> = {};
 
           const senderMatch = record.sender?.name ? byName.get(record.sender.name) : undefined;
-          if (senderMatch && !record.sender?.postcode && !record.sender?.city && (senderMatch.postCode || senderMatch.city)) {
-            updates.sender = { name: record.sender!.name, address: record.sender!.address, postcode: senderMatch.postCode, city: senderMatch.city };
+          if (senderMatch) {
+            const needsPostcodeCity = !record.sender?.postcode && !record.sender?.city && (senderMatch.postCode || senderMatch.city);
+            const needsOrgCountry = !record.sender?.orgNo && !record.sender?.country && (senderMatch.orgNo || senderMatch.country);
+            if (needsPostcodeCity || needsOrgCountry) {
+              updates.sender = {
+                name: record.sender!.name,
+                address: record.sender!.address,
+                postcode: record.sender?.postcode || senderMatch.postCode,
+                city: record.sender?.city || senderMatch.city,
+                orgNo: record.sender?.orgNo || senderMatch.orgNo,
+                country: record.sender?.country || senderMatch.country
+              };
+            }
           }
 
           const consigneeMatch = record.consignee?.name ? byName.get(record.consignee.name) : undefined;
-          if (consigneeMatch && !record.consignee?.postcode && !record.consignee?.city && (consigneeMatch.postCode || consigneeMatch.city)) {
-            updates.consignee = { name: record.consignee!.name, address: record.consignee!.address, postcode: consigneeMatch.postCode, city: consigneeMatch.city };
+          if (consigneeMatch) {
+            const needsPostcodeCity = !record.consignee?.postcode && !record.consignee?.city && (consigneeMatch.postCode || consigneeMatch.city);
+            const needsOrgCountry = !record.consignee?.orgNo && !record.consignee?.country && (consigneeMatch.orgNo || consigneeMatch.country);
+            if (needsPostcodeCity || needsOrgCountry) {
+              updates.consignee = {
+                name: record.consignee!.name,
+                address: record.consignee!.address,
+                postcode: record.consignee?.postcode || consigneeMatch.postCode,
+                city: record.consignee?.city || consigneeMatch.city,
+                orgNo: record.consignee?.orgNo || consigneeMatch.orgNo,
+                country: record.consignee?.country || consigneeMatch.country
+              };
+            }
           }
 
           if (Object.keys(updates).length > 0) {
@@ -381,7 +402,7 @@ function App() {
           }
         });
 
-        localStorage.setItem('addressBackfillV2Done', 'true');
+        localStorage.setItem('addressBackfillV3Done', 'true');
       })
       .catch((err) => console.error('Error running address backfill migration:', err));
 
