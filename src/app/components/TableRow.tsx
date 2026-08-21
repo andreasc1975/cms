@@ -222,12 +222,13 @@ export function TableRow({ data, onUpdate, onEdit, onRemove, isSelected = false,
         </div>
       )}
 
-      {/* Type Badge */}
+      {/* Type Badge — shows the real EX/IM/EU classification (box 1 on the
+          declaration), not the legacy typeBadge (C/E/P) that used to render here. */}
       {vis.typeBadge && (
         <div className="box-border content-stretch flex h-[35px] items-center justify-center px-[10px] py-[5px] relative shrink-0 w-[60px] pt-[5px] pr-[10px] pb-[5px] pl-[0px]">
           <div className="flex items-center justify-center px-[8px] py-[2px] bg-[#E8EEF3] rounded-[3px]">
             <span className="font-['Inter'] text-[11px] text-[#003160] font-semibold uppercase">
-              {data.typeBadge}
+              {data.declarationType || '—'}
             </span>
           </div>
         </div>
