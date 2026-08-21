@@ -774,13 +774,13 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
       return;
     }
 
-    // 2. Invoice totals must match what's actually been itemized in Items.
+    // 2. Invoice totals must match what's actually been itemized in Items —
+    // only Amount and Net Weight are checked; Gross Weight and Parcels are
+    // deliberately not validated, sending is allowed regardless of those two.
     const closeEnough = (a: number, b: number) => Math.abs(a - b) < 0.01;
     const parseAmount = (v: string | undefined) => parseFloat((v || '0').replace(/,/g, '')) || 0;
     const invoiceAmount = parseAmount(record.value);
     const invoiceNetWeight = parseAmount(record.netWeight);
-    const invoiceGrossWeight = parseAmount(record.grossWeight);
-    const invoiceParcels = parseAmount(record.noOfParcels);
 
     // Built as a list of only the dimensions that actually differ — the
     // header's progress bars round to whole percent for display, so a real
@@ -795,8 +795,6 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     };
     checkDimension('Amount', invoiceAmount, itemsSummary.totalAmount, '');
     checkDimension('Net Weight', invoiceNetWeight, itemsSummary.totalNetWeight, ' kg');
-    checkDimension('Gross Weight', invoiceGrossWeight, itemsSummary.totalGrossWeight, ' kg');
-    checkDimension('Parcels', invoiceParcels, itemsSummary.totalNoOfParcels, '');
 
     if (mismatches.length > 0) {
       setSendError(`Invoice totals don\u2019t match what\u2019s itemized in Items — ${mismatches.join('; ')}.`);
@@ -1169,7 +1167,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     {
       id: 'classification',
       title: 'Classification & Procedure',
-      requiredKeys: ['controlNo', 'declarationType', 'declarationStatus', 'transactionType'] as (keyof GeneralFormData)[]
+      requiredKeys: ['controlNo', 'declarationType', 'transactionType'] as (keyof GeneralFormData)[]
     },
     {
       id: 'references',
@@ -1500,19 +1498,6 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
                         options={['t-Regular export', 'Other type']}
                         onChange={(value) => updateFormField('exportType', value)}
                         tabIndex={4}
-                        disabled={isSent}
-                      />
-                    </div>
-                    <div>
-                      <CustomDropdown
-                        label="Message / Declaration Type"
-                        numberPrefix=""
-                        value={formData.declarationStatus}
-                        options={['FU - Complete', 'KO - Correction', 'MA - Manual', 'FO - Temporary', 'EN - Final', 'EB - Recalculation', 'RE - Refund RE', 'SO - Consolidated Customs Clearance']}
-                        onChange={(value) => updateFormField('declarationStatus', value)}
-                        onBlur={() => handleFieldBlur('declarationStatus')}
-                        isProposed={proposedFields.has('declarationStatus')}
-                        tabIndex={5}
                         disabled={isSent}
                       />
                     </div>

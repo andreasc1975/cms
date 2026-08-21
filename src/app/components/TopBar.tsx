@@ -42,12 +42,9 @@ interface TopBarProps {
     invoiceAmount?: string;
     currency?: string;
     netWeight?: string;
-    grossWeight?: string;
     totalStatisticalValue?: string;
     usedAmount?: number;
     usedNetWeight?: number;
-    usedGrossWeight?: number;
-    usedNoOfParcels?: number;
   };
   onSaveRegistration?: (newAssignment: Omit<TableRowData, 'id'>) => string;
   onNavigateToDetail?: (declarationNo?: string) => void;
@@ -137,14 +134,6 @@ export function TopBar({
   const netWeightTotal = parseAmount(detailData?.netWeight);
   const netWeightUsed = detailData?.usedNetWeight ?? 0;
   const netWeightPercent = netWeightTotal > 0 ? (netWeightUsed / netWeightTotal) * 100 : 0;
-
-  const grossWeightTotal = parseAmount(detailData?.grossWeight);
-  const grossWeightUsed = detailData?.usedGrossWeight ?? 0;
-  const grossWeightPercent = grossWeightTotal > 0 ? (grossWeightUsed / grossWeightTotal) * 100 : 0;
-
-  const noOfParcelsTotal = parseAmount(detailData?.noOfParcels);
-  const noOfParcelsUsed = detailData?.usedNoOfParcels ?? 0;
-  const noOfParcelsPercent = noOfParcelsTotal > 0 ? (noOfParcelsUsed / noOfParcelsTotal) * 100 : 0;
 
   // Placeholder reference numbers not yet backed by real data — generated once
   // per mount (not on every render) so they stay stable while the page is open.
@@ -477,40 +466,6 @@ export function TopBar({
                     <div className="h-full bg-[#52b89c] rounded-full transition-all" style={{ width: `${Math.max(0, Math.min(100, netWeightPercent))}%` }} />
                   </div>
                   <span className="text-[#52b89c] text-[11px] font-bold whitespace-nowrap font-['Calibre:SemiBold',sans-serif]">{Math.round(Math.max(0, Math.min(100, netWeightPercent)))}% USED</span>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="w-px h-[36px] bg-[#e0e0e0] shrink-0" />
-
-              {/* Gross Weight Total — validated against the sum of "Gross Weight" across Item Lines, same as the other three */}
-              <div className="basis-0 grow min-w-0">
-                <p className="leading-[normal] text-[13px]">
-                  <span className="font-['Calibre:SemiBold',sans-serif] text-[#003160] text-[11px] tracking-[0.7px] uppercase font-bold">Gross Weight Total: </span>
-                  <span className="font-[Inter] text-black">{formatAmount(grossWeightTotal)} KG</span>
-                </p>
-                <div className="flex items-center gap-[10px] mt-[6px]">
-                  <div className="flex-1 h-[6px] bg-[#e0e0e0] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#52b89c] rounded-full transition-all" style={{ width: `${Math.max(0, Math.min(100, grossWeightPercent))}%` }} />
-                  </div>
-                  <span className="text-[#52b89c] text-[11px] font-bold whitespace-nowrap font-['Calibre:SemiBold',sans-serif]">{Math.round(Math.max(0, Math.min(100, grossWeightPercent)))}% USED</span>
-                </div>
-              </div>
-
-              {/* Divider */}
-              <div className="w-px h-[36px] bg-[#e0e0e0] shrink-0" />
-
-              {/* No of Parcels Total — validated against the sum of "No of Parcels" across Item Lines */}
-              <div className="basis-0 grow min-w-0">
-                <p className="leading-[normal] text-[13px]">
-                  <span className="font-['Calibre:SemiBold',sans-serif] text-[#003160] text-[11px] tracking-[0.7px] uppercase font-bold">No of Parcels Total: </span>
-                  <span className="font-[Inter] text-black">{Math.round(noOfParcelsTotal)}</span>
-                </p>
-                <div className="flex items-center gap-[10px] mt-[6px]">
-                  <div className="flex-1 h-[6px] bg-[#e0e0e0] rounded-full overflow-hidden">
-                    <div className="h-full bg-[#52b89c] rounded-full transition-all" style={{ width: `${Math.max(0, Math.min(100, noOfParcelsPercent))}%` }} />
-                  </div>
-                  <span className="text-[#52b89c] text-[11px] font-bold whitespace-nowrap font-['Calibre:SemiBold',sans-serif]">{Math.round(Math.max(0, Math.min(100, noOfParcelsPercent)))}% USED</span>
                 </div>
               </div>
 
