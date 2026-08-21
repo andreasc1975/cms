@@ -403,10 +403,24 @@ function App() {
   // Tab reordering
   const [tabOrder, setTabOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.TAB_ORDER);
+    // Migrates a tabOrder saved before the Filter tabs rework — drops ids
+    // that no longer exist (the old 'cleared'/'manual'/'electronic') and
+    // appends any new built-in tabs (e.g. 'created'/'error'/...) that
+    // weren't there yet, so upgrading doesn't silently lose/hide tabs.
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return Array.isArray(parsed) ? parsed : DEFAULT_TAB_ORDER;
+        if (!Array.isArray(parsed)) return DEFAULT_TAB_ORDER;
+        const staleBuiltIns = new Set(['cleared', 'manual', 'electronic']);
+        // Drop stale built-in ids that no longer exist, keep everything else
+        // (current built-ins, in whatever order they were, plus any personal/template tabs).
+        const kept = parsed.filter((id: string) => !staleBuiltIns.has(id));
+        // Add any brand-new built-in tabs that aren't present yet, right after 'open'.
+        const missingBuiltIns = DEFAULT_TAB_ORDER.filter((id) => !kept.includes(id));
+        if (missingBuiltIns.length === 0) return kept;
+        const openIndex = kept.indexOf('open');
+        const insertAt = openIndex >= 0 ? openIndex + 1 : kept.length;
+        return [...kept.slice(0, insertAt), ...missingBuiltIns, ...kept.slice(insertAt)];
       } catch {
         return DEFAULT_TAB_ORDER;
       }
