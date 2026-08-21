@@ -488,10 +488,16 @@ export function TopBar({
                 <div className="flex gap-[8px] shrink-0">
                   <button
                     onClick={onValidate}
-                    className="bg-white border border-[#446bf9] box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 cursor-pointer hover:bg-[#f5f8ff] transition-colors focus:outline-none focus:ring-2 focus:ring-[#446BF9]"
+                    disabled={!!detailData?.validated}
+                    title={detailData?.validated ? 'Already validated — nothing new to check since the last edit' : undefined}
+                    className={`box-border content-stretch flex gap-[10px] h-[36px] items-center px-[16px] py-0 rounded-[2px] shrink-0 border transition-colors focus:outline-none focus:ring-2 focus:ring-[#446BF9] ${
+                      detailData?.validated
+                        ? 'bg-[#f5f5f5] border-[#e0e0e0] cursor-not-allowed'
+                        : 'bg-white border-[#446bf9] cursor-pointer hover:bg-[#f5f8ff]'
+                    }`}
                     data-name="Button/Validate"
                   >
-                    <span className="font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] text-[#446bf9] whitespace-nowrap">Validate</span>
+                    <span className={`font-['Calibre:SemiBold',sans-serif] font-bold text-[12px] whitespace-nowrap ${detailData?.validated ? 'text-[#9e9e9e]' : 'text-[#446bf9]'}`}>Validate</span>
                   </button>
                   <button
                     onClick={onSend}
