@@ -317,11 +317,22 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
           setProposedFields(new Set(storedProposed));
         } else {
           // New record — seed from what was entered in the Create modal,
-          // offered here as "proposed" values to accept or clear.
+          // offered here as "proposed" values to accept or clear. Save this
+          // immediately (not gated behind hasUserChanges) so the database
+          // reflects the real initial state right away — otherwise the main
+          // table's completion ring (which reads general_form_data directly)
+          // would show every never-manually-edited declaration as 0% done.
           const proposedKeys = (Object.keys(proposedData) as (keyof typeof proposedData)[])
             .filter((key) => proposedData[key]);
           setProposedFields(new Set(proposedKeys));
-          setFormData({ ...defaultFormData, ...proposedData });
+          const seeded = { ...defaultFormData, ...proposedData };
+          setFormData(seeded);
+          saveGeneralFormData(record.id, seeded).catch((err) => {
+            console.error('Error saving initial GENERAL form data to Supabase:', err);
+          });
+          saveProposedFields(record.id, proposedKeys).catch((err) => {
+            console.error('Error saving initial proposed fields to Supabase:', err);
+          });
         }
       })
       .catch((err) => console.error('Error loading GENERAL form data from Supabase:', err))
