@@ -9,6 +9,15 @@ interface GeneralFormDataForPdf {
 
 interface ItemLineRowForPdf {
   description: string;
+  statisticalNo?: string;
+  origin?: string;
+  preferences?: string;
+  procedure?: string;
+  otherQuantity?: string;
+  valuationCode?: string;
+  reference?: string;
+  adjustment?: string;
+  statisticalValue?: string;
 }
 
 /**
@@ -16,10 +25,13 @@ interface ItemLineRowForPdf {
  * — the actual "Single Administrative Document") with the declaration's
  * data, using the uploaded template PDF as-is rather than a hand-built
  * mockup. Box coordinates below were measured directly from the template's
- * own grid lines (see public/rd-0019-template.pdf), not guessed — but this
- * still isn't pixel-perfect for every box on the form, just the handful
- * that matter most for a useful preview: 1 (Declaration), 2 (Consignor),
- * 8 (Consignee), 31 (goods description), 35/38 (weights), 42 (value).
+ * own grid lines and label positions (see public/rd-0019-template.pdf).
+ *
+ * Important limitation: several GENERAL fields (boxes 48, 26, 7, 18, 6,
+ * 15A, 17A, 20, 21, 25, 29, 30) do NOT appear anywhere on this specific
+ * template's page — checked directly against the extracted text. They
+ * likely belong on a "BIS" continuation sheet (referenced in the header)
+ * that isn't part of this file, so there's no box to draw them into here.
  */
 export async function generateSadPdf(
   record: TableRowData,
@@ -38,7 +50,7 @@ export async function generateSadPdf(
 
   // `top` is measured from the top of the page (matching how the template
   // was inspected); pdf-lib's y-axis is bottom-up, so convert per draw call.
-  const draw = (text: string, x: number, top: number, size = 8) => {
+  const draw = (text: string | undefined, x: number, top: number, size = 8) => {
     if (!text) return;
     page.drawText(text, { x, y: height - top, size, font, color: rgb(0, 0, 0) });
   };
@@ -75,21 +87,54 @@ export async function generateSadPdf(
   draw(consigneeName, 207, 78, 8);
   wrap(consigneeAddress, 22).slice(0, 2).forEach((line, i) => draw(line, 207, 88 + i * 9, 7));
 
-  // Box 31 — Goods description (first item line, since the box preview only
-  // shows one representative item rather than the full Items list)
+  // The rest of the item-line boxes (31-46) only show the FIRST item line —
+  // same simplification as the description already used, since this is a
+  // one-page preview, not a full multi-item rendering.
   const firstItem = items[0];
+
+  // Box 31 — Goods description
   if (firstItem?.description) {
     wrap(firstItem.description, 55).slice(0, 2).forEach((line, i) => draw(line, 88, 145 + i * 9, 8));
   }
 
-  // Box 35 — Bruttovekt (gross weight)
+  // Box 32 — Varepost (item line number) — just "1" for the first item shown
+  if (firstItem) draw('1', 335, 122, 8);
+
+  // Box 33 — Varenummer (statistical/commodity number)
+  draw(firstItem?.statisticalNo, 385, 122, 8);
+
+  // Box 34 — Kode opprinnelsesland (country of origin)
+  draw(firstItem?.origin, 385, 144, 8);
+
+  // Box 35 — Bruttovekt (gross weight) — declaration total, not per-item
   draw(record.grossWeight || '0.00', 449, 143, 8);
 
-  // Box 38 — Nettovekt (net weight)
+  // Box 36 — Preferanse
+  draw(firstItem?.preferences, 528, 144, 8);
+
+  // Box 37 — Prosedyre
+  draw(firstItem?.procedure, 385, 166, 8);
+
+  // Box 38 — Nettovekt (net weight) — declaration total, not per-item
   draw(record.netWeight || '0.00', 449, 165, 8);
 
-  // Box 42 — Varens pris (value)
+  // Box 41 — Mengde i annen enhet (other quantity)
+  draw(firstItem?.otherQuantity, 385, 209, 8);
+
+  // Box 42 — Varens pris (value) — declaration total, not per-item
   draw(record.value || '0.00', 471, 210, 8);
+
+  // Box 43 — VF (valuation method code)
+  draw(firstItem?.valuationCode, 538, 209, 8);
+
+  // Box 44 — Tilleggsopplysninger (additional info / documents produced)
+  draw(firstItem?.reference, 75, 212, 7);
+
+  // Box 45 — Justering (adjustment)
+  draw(firstItem?.adjustment, 513, 233, 8);
+
+  // Box 46 — Statistisk verdi (statistical value)
+  draw(firstItem?.statisticalValue, 479, 255, 8);
 
   const pdfBytes = await pdfDoc.save();
   // pdf-lib's .save() returns a Uint8Array typed against the broader
