@@ -129,7 +129,8 @@ export function migrateRecord(raw: Partial<TableRowData> & { id: string }): Tabl
     sender: raw.sender ?? { name: '', address: '' },
     consignee: raw.consignee ?? { name: '', address: '' },
     owner: raw.owner ?? { name: '', address: '' },
-    withdrawals: raw.withdrawals
+    withdrawals: raw.withdrawals,
+    generalFormData: raw.generalFormData
   };
 }
 
