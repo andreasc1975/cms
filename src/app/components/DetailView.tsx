@@ -367,6 +367,31 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     return () => clearTimeout(timeout);
   }, [formData, record.id, hasUserChanges, formDataLoaded, onGeneralFormDataChange]);
 
+  // The debounce above silently cancels (via clearTimeout) if the user
+  // navigates away before the 600ms elapses — e.g. edit a field, then
+  // immediately click back to the list. Without this, that save (both to
+  // Supabase and the local completion-ring sync) simply never happens.
+  // These refs always hold the latest values so the unmount-only effect
+  // below can flush them, instead of capturing a stale closure.
+  const latestFormDataRef = useRef(formData);
+  const hasUserChangesRef = useRef(hasUserChanges);
+  useEffect(() => {
+    latestFormDataRef.current = formData;
+    hasUserChangesRef.current = hasUserChanges;
+  }, [formData, hasUserChanges]);
+
+  useEffect(() => {
+    return () => {
+      if (hasUserChangesRef.current) {
+        saveGeneralFormData(record.id, latestFormDataRef.current).catch((err) => {
+          console.error('Error flushing GENERAL form data on unmount:', err);
+        });
+        onGeneralFormDataChange?.(latestFormDataRef.current);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.id]);
+
   // Save proposed fields to Supabase whenever they change
   useEffect(() => {
     if (!formDataLoaded) return;
@@ -467,6 +492,27 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     }, 600);
     return () => clearTimeout(timeout);
   }, [detailData, record.id, itemsLoaded]);
+
+  // Same "flush on unmount" concern as the GENERAL form data above — if the
+  // user edits an Items row and navigates away before the 600ms debounce
+  // fires, clearTimeout silently cancels it and the edit is lost.
+  const latestDetailDataRef = useRef(detailData);
+  const itemsLoadedRef = useRef(itemsLoaded);
+  useEffect(() => {
+    latestDetailDataRef.current = detailData;
+    itemsLoadedRef.current = itemsLoaded;
+  }, [detailData, itemsLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (itemsLoadedRef.current) {
+        saveItemLines(record.id, latestDetailDataRef.current).catch((err) => {
+          console.error('Error flushing item lines on unmount:', err);
+        });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record.id]);
 
   // Log tab — loaded fresh each time it's opened (no live editing here, so
   // no debounced save needed, just a straightforward fetch).
