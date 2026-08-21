@@ -20,7 +20,7 @@ import { FormSelect } from './FormSelect';
 import { FormTextarea } from './FormTextarea';
 import { CustomDropdown, CustomDropdownRef } from './CustomDropdown';
 import { AddArticleModal, type ArticleData } from './AddArticleModal';
-import { Calculator, ListPlus, Pencil, X, FileText, Upload, Trash2 } from 'lucide-react';
+import { Calculator, ListPlus, Pencil, X, FileText, Upload, Trash2, Check } from 'lucide-react';
 
 // 45 Random Countries for dropdowns
 const COUNTRIES = [
@@ -721,6 +721,14 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
   };
 
   const [sendState, setSendState] = useState<'idle' | 'sending'>('idle');
+  // Brief green confirmation toast when Validate succeeds — auto-dismisses,
+  // unlike the error banner (which stays until the user closes it).
+  const [validateSuccessToast, setValidateSuccessToast] = useState(false);
+  useEffect(() => {
+    if (!validateSuccessToast) return;
+    const timeout = setTimeout(() => setValidateSuccessToast(false), 3000);
+    return () => clearTimeout(timeout);
+  }, [validateSuccessToast]);
   const [sendError, setSendError] = useState<string | null>(null);
 
   // Continuously (not just on an explicit Send click) reflects whether this
@@ -809,6 +817,7 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
     // Passed both checks — Send unlocks, and stays unlocked until the
     // declaration is edited again (see the invalidation effect below).
     onUpdateRecord?.({ validated: true, stage: record.stage === 'draft' ? 'created' : record.stage });
+    setValidateSuccessToast(true);
   }, [formData, record, itemsSummary, onUpdateRecord]);
 
   // "Send" — only reachable when validated is true (the button is disabled
@@ -1264,6 +1273,21 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
         >
           <span className="flex-1">{sendError}</span>
           <button onClick={() => setSendError(null)} className="cursor-pointer hover:opacity-70">
+            <X className="size-[14px]" />
+          </button>
+        </div>
+      )}
+
+      {/* Green confirmation toast when Validate succeeds — compact, top-right,
+          auto-dismisses (unlike the error banner above, which needs an explicit close). */}
+      {validateSuccessToast && (
+        <div
+          className="fixed z-[60] bg-[#EDF9F5] border border-[#52B89C] text-[#1E6B54] text-[13px] px-[16px] py-[10px] rounded-[4px] shadow-md flex items-center gap-[10px]"
+          style={{ top: `${headerHeight + TAB_BAR_HEIGHT + 12}px`, right: '20px' }}
+        >
+          <Check className="size-[16px] text-[#52B89C] shrink-0" />
+          <span>Declaration validated successfully — ready to send.</span>
+          <button onClick={() => setValidateSuccessToast(false)} className="cursor-pointer hover:opacity-70 shrink-0">
             <X className="size-[14px]" />
           </button>
         </div>
