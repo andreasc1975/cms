@@ -11,6 +11,7 @@ import {
   saveItemLines
 } from '../lib/declarationsApi';
 import { fetchLogs, addLog, type LogEntry } from '../lib/logsApi';
+import { REQUIRED_GENERAL_FIELD_KEYS } from '../lib/declarationCompleteness';
 import { listDocuments, uploadDocument, deleteDocument, type DocumentFile } from '../lib/documentsApi';
 import { generateCmrPdf } from '../lib/cmrPdf';
 import { generateSadPdf } from '../lib/sadPdf';
@@ -621,12 +622,9 @@ export const DetailView = forwardRef<DetailViewRef, DetailViewProps>(function De
 
   // "Validate and Send" — triggered from TopBar via the ref exposed below,
   // since the data it needs to check only lives here (GENERAL form fields,
-  // the Items totals).
-  const REQUIRED_GENERAL_FIELDS: (keyof GeneralFormData)[] = [
-    'controlNo', 'declarationType', 'transactionType', 'referenceNo', 'container',
-    'goodsPositionNo', 'noOfParcels', 'countryDispatch', 'countryDestination',
-    'deliveryTerms', 'deliveryPlace', 'nationality', 'customsOffice', 'transportMode', 'locationGoods'
-  ];
+  // the Items totals). List itself lives in a shared module so the main
+  // table's completion ring always agrees with this validation.
+  const REQUIRED_GENERAL_FIELDS = REQUIRED_GENERAL_FIELD_KEYS as (keyof GeneralFormData)[];
 
   // Human-readable label for each required field, matching the text shown
   // next to its orange box number in Details — used to name exactly which

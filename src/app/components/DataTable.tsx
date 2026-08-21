@@ -88,6 +88,7 @@ export function DataTable({
     currency: true,
     netWeight: true,
     grossWeight: true,
+    completion: true,
     actions: true
   };
   
@@ -273,6 +274,16 @@ export function DataTable({
             sortable={true}
             sortDirection={sortColumn === 'grossWeight' ? sortDirection : null}
             onSort={() => onSort?.('grossWeight')}
+          />
+        )}
+
+        {visibility.completion && (
+          <TableHeader 
+            label="COMPLETION" 
+            flexGrow={8}
+            minWidth="100px"
+            align="center"
+            sortable={false}
           />
         )}
 

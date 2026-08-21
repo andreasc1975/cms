@@ -18,6 +18,7 @@ export interface ColumnVisibility {
   currency: boolean;
   netWeight: boolean;
   grossWeight: boolean;
+  completion: boolean;
   actions: boolean;
 }
 
@@ -50,6 +51,7 @@ export function ColumnVisibilityModal({
     { key: 'currency', label: 'Currency' },
     { key: 'netWeight', label: 'Net Weight' },
     { key: 'grossWeight', label: 'Gross Weight' },
+    { key: 'completion', label: 'Completion' },
     { key: 'actions', label: 'Actions' }
   ];
 

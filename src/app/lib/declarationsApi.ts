@@ -56,6 +56,7 @@ function declarationRowToTableRowData(row: any, invoices: InvoiceRow[]): TableRo
     currencyRate: row.currency_rate,
     stage: row.stage,
     sentDate: row.sent_date,
+    generalFormData: row.general_form_data,
     processed: row.processed,
     referenceDeclaration: row.reference_declaration,
     recalculatedFrom: row.recalculated_from,

@@ -1,4 +1,6 @@
 import { StatusBadge } from './StatusBadge';
+import { CompletionRing } from './CompletionRing';
+import { getCompletionInfo } from '../lib/declarationCompleteness';
 import { ActionButton } from './ActionButton';
 import type { ColumnVisibility } from './ColumnVisibilityModal';
 import type { InvoiceRow } from './InvoiceTable';
@@ -48,6 +50,10 @@ export interface TableRowData {
   // distinct step) so the header's "Send Date" and the Processed tab don't
   // get conflated.
   sentDate?: string;
+  // Raw GENERAL form data (box-numbered fields) — fetched alongside
+  // everything else in the main list query, used to compute the
+  // completion ring without an extra request per declaration.
+  generalFormData?: Record<string, any>;
   processed: string;
   referenceDeclaration: string;
   recalculatedFrom: string;
@@ -160,6 +166,7 @@ export function TableRow({ data, onUpdate, onEdit, onRemove, isSelected = false,
     currency: true,
     netWeight: true,
     grossWeight: true,
+    completion: true,
     actions: true
   };
 
@@ -312,6 +319,14 @@ export function TableRow({ data, onUpdate, onEdit, onRemove, isSelected = false,
           <div className="font-['Inter'] leading-[0] not-italic text-[12px] text-black text-right text-nowrap">
             <p className="font-['Roboto_Mono'] leading-[normal]">{data.grossWeight}</p>
           </div>
+        </div>
+      )}
+
+      {/* Completion — how many of the 15 required GENERAL fields are filled
+          in, regardless of status. Shown on every declaration. */}
+      {vis.completion && (
+        <div className="box-border content-stretch flex h-[35px] items-center justify-center px-[10px] py-[5px] relative min-w-0" style={{ flexGrow: 8, flexShrink: 1, flexBasis: 0, minWidth: '100px' }}>
+          <CompletionRing {...getCompletionInfo(data.generalFormData)} />
         </div>
       )}
 
