@@ -16,6 +16,7 @@ import { ColumnVisibilityModal, type ColumnVisibility } from './components/Colum
 import type { TableRowData } from './components/TableRow';
 import { migrateRecords } from './components/TableRow';
 import { fetchDeclarations, createDeclaration, updateDeclaration, deleteDeclaration } from './lib/declarationsApi';
+import { fetchAddresses } from './lib/addressesApi';
 import { addLog } from './lib/logsApi';
 
 export interface FilterTemplate {
@@ -341,6 +342,65 @@ function App() {
       cancelled = true;
     };
   }, []);
+
+  // One-time backfill: earlier, selecting a company from the address book
+  // (rather than a live Brreg lookup) dropped postcode/city from the saved
+  // Consignor/Consignee address — this fills those in retroactively by
+  // matching against the address book, but ONLY ever adds to an address,
+  // never replaces or shortens one. Gated by localStorage so it runs once
+  // ever, not on every load.
+  useEffect(() => {
+    if (data.length === 0) return;
+    if (localStorage.getItem('addressBackfillV1Done')) return;
+
+    let cancelled = false;
+    fetchAddresses()
+      .then((addresses) => {
+        if (cancelled) return;
+        const byName = new Map(addresses.map((a) => [a.name, a]));
+
+        const buildFullAddress = (a: { address: string; postCode: string; city: string }) =>
+          [a.address, a.postCode, a.city].filter(Boolean).join(', ');
+
+        data.forEach((record) => {
+          const updates: Partial<TableRowData> = {};
+
+          const senderMatch = record.sender?.name ? byName.get(record.sender.name) : undefined;
+          if (senderMatch && (senderMatch.postCode || senderMatch.city)) {
+            const currentAddress = record.sender?.address || '';
+            const alreadyHasPostcode = !!senderMatch.postCode && currentAddress.includes(senderMatch.postCode);
+            const fullAddress = buildFullAddress(senderMatch);
+            if (!alreadyHasPostcode && fullAddress.length > currentAddress.length) {
+              updates.sender = { name: record.sender!.name, address: fullAddress };
+            }
+          }
+
+          const consigneeMatch = record.consignee?.name ? byName.get(record.consignee.name) : undefined;
+          if (consigneeMatch && (consigneeMatch.postCode || consigneeMatch.city)) {
+            const currentAddress = record.consignee?.address || '';
+            const alreadyHasPostcode = !!consigneeMatch.postCode && currentAddress.includes(consigneeMatch.postCode);
+            const fullAddress = buildFullAddress(consigneeMatch);
+            if (!alreadyHasPostcode && fullAddress.length > currentAddress.length) {
+              updates.consignee = { name: record.consignee!.name, address: fullAddress };
+            }
+          }
+
+          if (Object.keys(updates).length > 0) {
+            setData((prev) => prev.map((r) => (r.id === record.id ? { ...r, ...updates } : r)));
+            updateDeclaration(record.id, updates).catch((err) => {
+              console.error(`Error backfilling address for declaration ${record.id}:`, err);
+            });
+          }
+        });
+
+        localStorage.setItem('addressBackfillV1Done', 'true');
+      })
+      .catch((err) => console.error('Error running address backfill migration:', err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data.length]);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addModalKey, setAddModalKey] = useState(0); // Key to force modal reset
